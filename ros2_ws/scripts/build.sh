@@ -14,8 +14,11 @@ ROS_DISTRO_ENV="${ROS_DISTRO:-}"
 ROS_DISTRO="${ROS_DISTRO_ARG:-${ROS_DISTRO_ENV:-$ROS_DISTRO_DEFAULT}}"
 
 if [ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]; then
+  # ROS setup scripts may reference unset vars; don't let `set -u` break sourcing.
+  set +u
   # shellcheck disable=SC1090
   source "/opt/ros/${ROS_DISTRO}/setup.bash"
+  set -u
 else
   echo "[build] ERROR: /opt/ros/${ROS_DISTRO}/setup.bash not found. Please install ROS 2 (${ROS_DISTRO}) first."
   exit 1

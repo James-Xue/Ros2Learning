@@ -14,16 +14,21 @@ ROS_DISTRO="${ROS_DISTRO_ARG:-${ROS_DISTRO_ENV:-$ROS_DISTRO_DEFAULT}}"
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 if [ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]; then
+  # ROS setup scripts may reference unset vars; don't let `set -u` break sourcing.
+  set +u
   # shellcheck disable=SC1090
   source "/opt/ros/${ROS_DISTRO}/setup.bash"
+  set -u
 else
   echo "[source] ERROR: /opt/ros/${ROS_DISTRO}/setup.bash not found. Please install ROS 2 (${ROS_DISTRO}) first."
   return 1
 fi
 
 if [ -f "${WORKSPACE_DIR}/install/setup.bash" ]; then
+  set +u
   # shellcheck disable=SC1090
   source "${WORKSPACE_DIR}/install/setup.bash"
+  set -u
 else
   echo "[source] NOTE: install/setup.bash not found yet. Run ./scripts/build.sh first."
 fi
