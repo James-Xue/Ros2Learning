@@ -5,10 +5,13 @@ set -euo pipefail
 # 用法：
 #   ./scripts/build.sh [ros_distro]
 # 例如：
-#   ./scripts/build.sh humble
+#   ./scripts/build.sh jazzy
 
-ROS_DISTRO_DEFAULT="humble"
-ROS_DISTRO="${1:-$ROS_DISTRO_DEFAULT}"
+# 优先级：参数 > 环境变量 ROS_DISTRO > 默认 jazzy
+ROS_DISTRO_DEFAULT="jazzy"
+ROS_DISTRO_ARG="${1:-}"
+ROS_DISTRO_ENV="${ROS_DISTRO:-}"
+ROS_DISTRO="${ROS_DISTRO_ARG:-${ROS_DISTRO_ENV:-$ROS_DISTRO_DEFAULT}}"
 
 if [ -f "/opt/ros/${ROS_DISTRO}/setup.bash" ]; then
   # shellcheck disable=SC1090

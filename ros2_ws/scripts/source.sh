@@ -5,8 +5,11 @@ set -euo pipefail
 # 用法：
 #   source ./scripts/source.sh [ros_distro]
 
-ROS_DISTRO_DEFAULT="humble"
-ROS_DISTRO="${1:-$ROS_DISTRO_DEFAULT}"
+# 优先级：参数 > 环境变量 ROS_DISTRO > 默认 jazzy
+ROS_DISTRO_DEFAULT="jazzy"
+ROS_DISTRO_ARG="${1:-}"
+ROS_DISTRO_ENV="${ROS_DISTRO:-}"
+ROS_DISTRO="${ROS_DISTRO_ARG:-${ROS_DISTRO_ENV:-$ROS_DISTRO_DEFAULT}}"
 
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 

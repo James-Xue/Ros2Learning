@@ -15,18 +15,18 @@ A ROS 2 simulation project for an autonomous vacuum robot.
 
 在 Ubuntu 上运行：
 
-- `./scripts/setup_ubuntu.sh humble`（默认 humble，可改为你的发行版）
+- `./scripts/setup_ubuntu.sh jazzy`（默认 jazzy，可改为你的发行版）
 
-> 前提：你的机器已经安装了对应 ROS 2（例如 `/opt/ros/humble` 存在）。
+> 前提：你的机器已经安装了对应 ROS 2（例如 `/opt/ros/jazzy` 存在）。
 
 ### 3) 构建
 
-- `./scripts/build.sh humble`
+- `./scripts/build.sh jazzy`
 
 ### 4) 使用（source 环境）
 
 在当前终端执行：
 
-- `source ./scripts/source.sh humble`
+- `source ./scripts/source.sh jazzy`
 
 之后即可直接 `ros2 ...` 使用，并且包含本工作空间 overlay。

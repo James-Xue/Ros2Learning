@@ -5,10 +5,13 @@ set -euo pipefail
 # 用法：
 #   ./scripts/setup_ubuntu.sh [ros_distro]
 # 例如：
-#   ./scripts/setup_ubuntu.sh humble
+#   ./scripts/setup_ubuntu.sh jazzy
 
-ROS_DISTRO_DEFAULT="humble"
-ROS_DISTRO="${1:-$ROS_DISTRO_DEFAULT}"
+# 优先级：参数 > 环境变量 ROS_DISTRO > 默认 jazzy
+ROS_DISTRO_DEFAULT="jazzy"
+ROS_DISTRO_ARG="${1:-}"
+ROS_DISTRO_ENV="${ROS_DISTRO:-}"
+ROS_DISTRO="${ROS_DISTRO_ARG:-${ROS_DISTRO_ENV:-$ROS_DISTRO_DEFAULT}}"
 
 if ! command -v lsb_release >/dev/null 2>&1; then
   echo "lsb_release not found; please install: sudo apt-get update && sudo apt-get install -y lsb-release"
