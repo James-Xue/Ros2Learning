@@ -21,17 +21,17 @@ source ./scripts/source.sh jazzy
 ### 架构示意（方向性）
 ```mermaid
 flowchart LR
-  subgraph Sim[Gazebo Sim]
-    world[World/Robot Model]
-    sensors[Sim Sensors]
+  subgraph Sim[Gazebo Sim（仿真环境）]
+    world[World/Robot Model（世界/机器人模型）]
+    sensors[Sim Sensors（仿真传感器）]
   end
-  subgraph ROS[ROS 2 System]
-    desc[robot_description]
-    ctrl[robot_control]
-    bridge[ros_gz_bridge]
-    mapping[robot_mapping]
-    nav[robot_navigation]
-    apps[robot_teleop/demo]
+  subgraph ROS[ROS 2 System（ROS 2 系统）]
+    desc[robot_description（模型与TF）]
+    ctrl[robot_control（底盘控制）]
+    bridge[ros_gz_bridge（话题桥接）]
+    mapping[robot_mapping（建图）]
+    nav[robot_navigation（导航）]
+    apps[robot_teleop/demo（控制与示例）]
   end
   world --> sensors
   sensors --> bridge
@@ -121,11 +121,11 @@ flowchart LR
 ### 开发流程（建议）
 ```mermaid
 flowchart TD
-  A[明确需求/里程碑] --> B[设计包划分与话题/TF]
-  B --> C[实现最小可跑版本]
-  C --> D[验证与记录问题]
-  D --> E[参数调优与重构]
-  E --> F[添加功能与示例]
+  A[明确需求/里程碑（目标与范围）] --> B[设计包划分与话题/TF（接口约定）]
+  B --> C[实现最小可跑版本（MVP）]
+  C --> D[验证与记录问题（对照验收）]
+  D --> E[参数调优与重构（稳定性）]
+  E --> F[添加功能与示例（扩展）]
 ```
 
 ## 最低测试流程（手工）
