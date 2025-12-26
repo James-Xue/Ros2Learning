@@ -13,6 +13,29 @@ cd Ros2Learning/ros2_ws
 source ./scripts/source.sh jazzy
 ```
 
+## 新手最快仿真（先动起来）
+
+> 说明：当前仓库尚未内置完整仿真包。想“立刻让小车动起来”，可以先用官方示例验证环境与手感，再回到本仓库按规划补齐包。
+
+1) 安装 TurtleBot3 仿真与遥控（Ubuntu + Jazzy）
+```bash
+sudo apt install ros-jazzy-turtlebot3-gazebo ros-jazzy-turtlebot3-teleop
+```
+
+2) 启动 Gazebo 仿真
+```bash
+export TURTLEBOT3_MODEL=burger
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+3) 新终端键盘遥控（WASD）
+```bash
+source /opt/ros/jazzy/setup.bash
+ros2 run turtlebot3_teleop teleop_keyboard
+```
+
+> 常见卡点：Gazebo 未安装/未启动、`TURTLEBOT3_MODEL` 未设置、ROS 发行版不一致。
+
 ## 仿真优先的总体设计（Gazebo + Jazzy）
 
 > 说明：当前阶段以仿真为主，硬件暂不接入。方案成熟后再进入实现阶段。
