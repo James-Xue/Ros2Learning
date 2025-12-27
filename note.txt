@@ -1,0 +1,10 @@
+# 1
+echo "export TURTLEBOT3_MODEL=burger" >> ~/.bashrc
+source ~/.bashrc
+
+# 2
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+
+# 3
+ros2 run ros2_learning_turtlebot3_teleop teleop_keyboard
+

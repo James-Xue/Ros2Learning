@@ -31,7 +31,7 @@ ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 3) 新终端键盘遥控（WASD）
 ```bash
 source /opt/ros/jazzy/setup.bash
-ros2 run turtlebot3_teleop teleop_keyboard
+ros2 run ros2_learning_turtlebot3_teleop teleop_keyboard
 ```
 
 > 常见卡点：Gazebo 未安装/未启动、`TURTLEBOT3_MODEL` 未设置、ROS 发行版不一致。
