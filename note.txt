@@ -8,3 +8,8 @@ ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 # 3
 ros2 run ros2_learning_turtlebot3_teleop teleop_keyboard
 
+# 4
+cd /home/joey/1_code/Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 run ros2_learning_cpp talker
+

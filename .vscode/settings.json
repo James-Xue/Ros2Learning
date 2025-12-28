@@ -1,5 +1,5 @@
 {
-    "cmake.sourceDirectory": "/home/joey/1_code/Ros2Learning/ros2_ws/src/ros2_learning_cpp",
+    "cmake.sourceDirectory": "${workspaceFolder}/ros2_ws/src/ros2_learning_cpp",
     "C_Cpp.default.compileCommands": "${workspaceFolder}/ros2_ws/build/ros2_learning_cpp/compile_commands.json",
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
     "C_Cpp.default.includePath": [
@@ -13,5 +13,15 @@
         "${workspaceFolder}/ros2_ws/install",
         "/opt/ros/${env:ROS_DISTRO}/include",
         "/usr/include"
-    ]
+    ],
+    "C_Cpp.clang_format_style": "file",
+    "C_Cpp.clang_format_fallbackStyle": "none",
+    "[cpp]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "[c]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    }
 }

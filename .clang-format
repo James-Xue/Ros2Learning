@@ -1,0 +1,19 @@
+BasedOnStyle: LLVM
+IndentWidth: 4
+TabWidth: 4
+UseTab: Never
+ColumnLimit: 120
+
+# Braces: '{' on its own line
+BreakBeforeBraces: Allman
+
+# Constructor initializer list style
+BreakConstructorInitializers: BeforeComma
+PackConstructorInitializers: Never
+ConstructorInitializerIndentWidth: 8
+
+# Keep things readable
+AllowShortFunctionsOnASingleLine: None
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+AllowShortBlocksOnASingleLine: Never
