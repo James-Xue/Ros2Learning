@@ -1,0 +1,50 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "ROS2: Build (RelWithDebInfo)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+            ],
+            "problemMatcher": [],
+            "group": "build"
+        },
+        {
+            "label": "ROS2: Run talker (integrated terminal)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && ros2 run ros2_learning_cpp talker"
+            ],
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-demo",
+                "clear": true
+            }
+        },
+        {
+            "label": "ROS2: Run listener (integrated terminal)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && ros2 run ros2_learning_cpp listener"
+            ],
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-demo",
+                "clear": true
+            }
+        }
+    ]
+}
