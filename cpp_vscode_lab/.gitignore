@@ -1,0 +1,7 @@
+build/
+.vscode/ipch/
+*.o
+*.obj
+*.exe
+*.out
+*.dSYM/
