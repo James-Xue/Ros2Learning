@@ -2,6 +2,20 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "ROS2: Build (Debug)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_turtlebot3_teleop --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+            ],
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
             "label": "ROS2: Build (RelWithDebInfo)",
             "type": "shell",
             "command": "bash",
