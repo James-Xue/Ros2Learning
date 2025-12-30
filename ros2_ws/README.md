@@ -33,6 +33,7 @@ TurtleBot3 Task-Driven Navigation System (ROS 2)
 
 3. 系统架构概览
 软件分层结构
+```text
 ┌────────────────────────────────┐
 │ Mission Layer (Custom)         │
 │ - 任务接口                     │
@@ -53,11 +54,13 @@ TurtleBot3 Task-Driven Navigation System (ROS 2)
 ├────────────────────────────────┤
 │ Simulation (Gazebo)            │
 └────────────────────────────────┘
+```
 
 
 本项目的核心代码主要集中在 Mission Layer 与 System Bringup，底层算法由成熟的 ROS2 官方组件提供。
 
 4. 项目结构
+```text
 ros2_ws/
 └── src/
     ├── bringup/                  # 系统启动与模式管理（自定义）
@@ -79,6 +82,7 @@ ros2_ws/
     │
     ├── robot_description/         # 机器人模型（URDF/Xacro）
     └── sim_gazebo/                # Gazebo world 与仿真资源
+```
 
 5. 环境依赖
 
