@@ -28,8 +28,18 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc build-relative paths (./csu, ./sysdeps) to local sources",
+                    "text": "set substitute-path ./csu third_party/glibc/csu",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map glibc build-relative paths (./csu/../sysdeps) to local sources",
+                    "text": "set substitute-path ./sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
-                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "text": "directory third_party/glibc",
                     "ignoreFailures": true
                 }
             ],
@@ -67,8 +77,18 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc build-relative paths (./csu, ./sysdeps) to local sources",
+                    "text": "set substitute-path ./csu third_party/glibc/csu",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map glibc build-relative paths (./csu/../sysdeps) to local sources",
+                    "text": "set substitute-path ./sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
-                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "text": "directory third_party/glibc",
                     "ignoreFailures": true
                 }
             ],
@@ -101,8 +121,18 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc build-relative paths (./csu, ./sysdeps) to local sources",
+                    "text": "set substitute-path ./csu third_party/glibc/csu",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map glibc build-relative paths (./csu/../sysdeps) to local sources",
+                    "text": "set substitute-path ./sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
-                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "text": "directory third_party/glibc",
                     "ignoreFailures": true
                 }
             ],
@@ -135,8 +165,18 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc build-relative paths (./csu, ./sysdeps) to local sources",
+                    "text": "set substitute-path ./csu third_party/glibc/csu",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map glibc build-relative paths (./csu/../sysdeps) to local sources",
+                    "text": "set substitute-path ./sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
-                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "text": "directory third_party/glibc",
                     "ignoreFailures": true
                 }
             ],
@@ -169,8 +209,18 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc build-relative paths (./csu, ./sysdeps) to local sources",
+                    "text": "set substitute-path ./csu third_party/glibc/csu",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map glibc build-relative paths (./csu/../sysdeps) to local sources",
+                    "text": "set substitute-path ./sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
-                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "text": "directory third_party/glibc",
                     "ignoreFailures": true
                 }
             ],
