@@ -11,6 +11,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "sourceFileMap": {
+                "./csu": "${workspaceFolder}/third_party/glibc/csu",
+                "../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+            },
+            "logging": {
+                "engineLogging": true
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -60,6 +71,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "sourceFileMap": {
+                "./csu": "${workspaceFolder}/third_party/glibc/csu",
+                "../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+            },
+            "logging": {
+                "engineLogging": true
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -104,6 +126,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "sourceFileMap": {
+                "./csu": "${workspaceFolder}/third_party/glibc/csu",
+                "../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+            },
+            "logging": {
+                "engineLogging": true
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -148,6 +181,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "sourceFileMap": {
+                "./csu": "${workspaceFolder}/third_party/glibc/csu",
+                "../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+            },
+            "logging": {
+                "engineLogging": true
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
@@ -192,6 +236,17 @@
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",
+            "sourceFileMap": {
+                "./csu": "${workspaceFolder}/third_party/glibc/csu",
+                "../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+            },
+            "logging": {
+                "engineLogging": true
+            },
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing for gdb",
