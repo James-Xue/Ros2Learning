@@ -77,3 +77,14 @@ cmake --build build -j
   - 在 `src/` 新增 `06_xxx.cpp`
   - 在 `CMakeLists.txt` 里加一行 `add_demo(06_xxx src/06_xxx.cpp)`
   - 复制一份 `launch.json` 里的配置改 program 名字即可
+
+- **调试时跳进 glibc（例如 `libc_start_call_main.h`）提示“无法加载源码”**：
+  - 这是正常现象：系统库的源码默认不在你的机器上。
+  - 本工程的 `.vscode/launch.json` 已配置：
+    - 启用 Ubuntu `debuginfod` 自动下载系统库调试符号
+    - 增加 `third_party/glibc` 作为 glibc 源码搜索路径
+  - 你需要先下载匹配你系统 glibc 版本的源码到本工程目录：
+    ```bash
+    ./scripts/setup_glibc_source.sh
+    ```
+  - 然后重新 `F5` 启动调试，再 `F11` 单步进入即可看到源码。

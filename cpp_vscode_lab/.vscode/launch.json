@@ -16,6 +16,21 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "Enable Ubuntu debuginfod (auto-download debug symbols)",
+                    "text": "set debuginfod enabled on",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Ubuntu debuginfod URL",
+                    "text": "set debuginfod urls https://debuginfod.ubuntu.com",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Add glibc source directory (for stepping into libc startup code)",
+                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "ignoreFailures": true
                 }
             ],
             "preLaunchTask": "CMake Build"
@@ -40,6 +55,21 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "Enable Ubuntu debuginfod (auto-download debug symbols)",
+                    "text": "set debuginfod enabled on",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Ubuntu debuginfod URL",
+                    "text": "set debuginfod urls https://debuginfod.ubuntu.com",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Add glibc source directory (for stepping into libc startup code)",
+                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "ignoreFailures": true
                 }
             ],
             "preLaunchTask": "CMake Build"
@@ -58,6 +88,21 @@
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable Ubuntu debuginfod (auto-download debug symbols)",
+                    "text": "set debuginfod enabled on",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Ubuntu debuginfod URL",
+                    "text": "set debuginfod urls https://debuginfod.ubuntu.com",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Add glibc source directory (for stepping into libc startup code)",
+                    "text": "directory ${workspaceFolder}/third_party/glibc",
                     "ignoreFailures": true
                 }
             ],
@@ -78,6 +123,21 @@
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
                     "ignoreFailures": true
+                },
+                {
+                    "description": "Enable Ubuntu debuginfod (auto-download debug symbols)",
+                    "text": "set debuginfod enabled on",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Ubuntu debuginfod URL",
+                    "text": "set debuginfod urls https://debuginfod.ubuntu.com",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Add glibc source directory (for stepping into libc startup code)",
+                    "text": "directory ${workspaceFolder}/third_party/glibc",
+                    "ignoreFailures": true
                 }
             ],
             "preLaunchTask": "CMake Build"
@@ -96,6 +156,21 @@
                 {
                     "description": "Enable pretty-printing for gdb",
                     "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable Ubuntu debuginfod (auto-download debug symbols)",
+                    "text": "set debuginfod enabled on",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Set Ubuntu debuginfod URL",
+                    "text": "set debuginfod urls https://debuginfod.ubuntu.com",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Add glibc source directory (for stepping into libc startup code)",
+                    "text": "directory ${workspaceFolder}/third_party/glibc",
                     "ignoreFailures": true
                 }
             ],

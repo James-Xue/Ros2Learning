@@ -1,3 +1,9 @@
+# Local build artifacts
+build/
+
+# Downloaded third-party sources (do not commit)
+third_party/*
+!third_party/.gitkeep
 build/
 .vscode/ipch/
 *.o
