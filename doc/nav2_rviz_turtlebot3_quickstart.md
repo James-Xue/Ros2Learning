@@ -57,3 +57,45 @@ source /opt/ros/jazzy/setup.bash
 ## 小贴士
 - 导航过程中不要同时手动发布速度指令，以免与控制器冲突。
 - 可在 RViz “File -> Save Config” 保存当前可视化配置，方便下次直接加载。
+
+## Nav2 C++ 代码客户端最小示例（`nav2_client`）
+> 目标：用 C++ action client 发送单个导航目标，包含初始位姿发布、反馈打印与超时取消，适配仿真时间。
+
+代码位置：`ros2_ws/src/ros2_learning_cpp/src/nav2_client.cpp`  
+构建配置：`ros2_ws/src/ros2_learning_cpp/CMakeLists.txt`（可执行名 `nav2_client`）
+
+### 依赖（已在 package.xml / CMakeLists.txt 声明）
+- `rclcpp`, `rclcpp_action`
+- `nav2_msgs`
+- `geometry_msgs`
+- `tf2`, `tf2_geometry_msgs`
+
+### 运行前准备
+1. 启动仿真与 Nav2（与上文一致），确保全部使用 `use_sim_time:=true`。
+2. Source 环境（示例）：
+   ```bash
+   source /opt/ros/jazzy/setup.bash
+   cd /workspace/Ros2Learning/ros2_ws
+   colcon build --packages-select ros2_learning_cpp
+   source install/setup.bash
+   ```
+   > 若本地未安装 `colcon`，请先安装：`sudo apt install python3-colcon-common-extensions`。
+
+### 运行命令
+```bash
+ros2 run ros2_learning_cpp nav2_client
+```
+
+### 节点行为说明
+1. 设置 `use_sim_time` 参数，等待仿真时钟有效。
+2. 向 `/initialpose` 连续发布 5 次初始位姿（frame_id=map），避免未定位直接导航。
+3. 创建 `NavigateToPose` action client，等待服务器。
+4. 发送目标点（默认 x=1.0, y=0.0, yaw=0），打印剩余距离反馈。
+5. 60 秒内未完成则取消任务；成功/取消/异常均在日志提示。
+
+### 快速验证与调试
+- 观察终端日志是否出现 “Goal accepted” 和反馈距离。
+- 结果状态若为 aborted/canceled，检查：
+  - `ros2 node list | grep -E 'amcl|map_server|planner|controller'`
+  - `ros2 run tf2_ros tf2_echo map base_link`
+- 目标点可根据地图实际可行区域修改：编辑 `nav2_client.cpp` 中的目标坐标后重新构建。
