@@ -13,6 +13,16 @@ cd Ros2Learning/ros2_ws
 source ./scripts/source.sh jazzy
 ```
 
+## VS Code 调试：步入 rclcpp 源码
+
+本仓库的 VS Code 调试配置已包含 `sourceFileMap`，用于把系统里的 `/usr/src/ros-jazzy-rclcpp-*` 映射到本仓库本地下载的源码目录。
+
+首次在新机器上调试前，先拉取匹配版本的 `rclcpp` 源码（不会提交到 git）：
+
+```bash
+./ros2_ws/scripts/setup_rclcpp_source.sh jazzy
+```
+
 ## 新手最快仿真（先动起来）
 
 > 说明：当前仓库尚未内置完整仿真包。想“立刻让小车动起来”，可以先用官方示例验证环境与手感，再回到本仓库按规划补齐包。
