@@ -13,11 +13,10 @@
             "problemMatcher": [
                 {
                     "owner": "ros2-oneclick",
-                    "pattern": [
-                        {
-                            "regexp": ".*"
-                        }
-                    ],
+                    "pattern": {
+                        "regexp": "^(.*)$",
+                        "message": 1
+                    },
                     "background": {
                         "activeOnStart": true,
                         "beginsPattern": "^\\[tb3_oneclick\\]\\[START\\]",

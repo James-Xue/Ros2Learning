@@ -119,11 +119,13 @@ RViz 可视化
 
 通过自定义任务节点指定终点，而非使用 RViz 手动点目标：
 
+text '''
 ros2 run mission_manager go_to_pose \
   --x 2.0 \
   --y 1.5 \
   --yaw 1.57 \
   --timeout 120
+'''
 
 行为说明
 
