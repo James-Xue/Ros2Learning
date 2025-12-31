@@ -58,11 +58,31 @@
             "sourceFileMap": {
                 "/usr/src/ros-jazzy-rclcpp-": "${workspaceFolder}/third_party/rclcpp_repo/rclcpp"
             },
-            "preLaunchTask": "ROS2: Build (Debug)",
+            "preLaunchTask": "ROS2: One-click TB3+Nav2+RViz (Debug stack)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing",
                     "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Breakpoint: Nav2Client::run",
+                    "text": "-break-insert -f Nav2Client::run",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Breakpoint: Nav2Client::wait_for_server",
+                    "text": "-break-insert -f Nav2Client::wait_for_server",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Breakpoint: Nav2Client::publish_initial_pose",
+                    "text": "-break-insert -f Nav2Client::publish_initial_pose",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Breakpoint: Nav2Client::send_goal",
+                    "text": "-break-insert -f Nav2Client::send_goal",
                     "ignoreFailures": true
                 },
                 {

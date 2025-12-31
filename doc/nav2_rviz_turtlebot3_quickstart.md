@@ -86,6 +86,17 @@ source /opt/ros/jazzy/setup.bash
 ros2 run ros2_learning_cpp nav2_client
 ```
 
+## VS Code 一键启动 + 断点调试（推荐）
+
+仓库已提供一条“一键启动仿真 + Nav2 + RViz + 断点调试 nav2_client”的 VS Code 配置：
+
+1. 在 VS Code 中打开本仓库，确保已拉取并执行过（用于步入 rclcpp 源码，可选）：
+  ```bash
+  ./ros2_ws/scripts/setup_rclcpp_source.sh jazzy
+  ```
+2. 在 VS Code 的 Run and Debug 面板选择：`ROS2: Debug nav2_client (Debug build)`，按 F5。
+3. 该配置会自动：Debug 构建工作空间、启动 Gazebo/ Nav2/ RViz，并在 `Nav2Client::run`、`wait_for_server`、`publish_initial_pose`、`send_goal` 处预置断点。
+
 ### 节点行为说明
 1. 设置 `use_sim_time` 参数，等待仿真时钟有效。
 2. 向 `/initialpose` 连续发布 5 次初始位姿（frame_id=map），避免未定位直接导航。

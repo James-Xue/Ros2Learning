@@ -2,6 +2,37 @@
     "version": "2.0.0",
     "tasks": [
         {
+            "label": "ROS2: One-click TB3+Nav2+RViz (Debug stack)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}' && ./ros2_ws/scripts/oneclick_tb3_nav2_rviz_debug.sh jazzy waffle_pi"
+            ],
+            "isBackground": true,
+            "problemMatcher": [
+                {
+                    "owner": "ros2-oneclick",
+                    "pattern": [
+                        {
+                            "regexp": ".*"
+                        }
+                    ],
+                    "background": {
+                        "activeOnStart": true,
+                        "beginsPattern": "^\\[tb3_oneclick\\]\\[START\\]",
+                        "endsPattern": "^\\[tb3_oneclick\\]\\[READY\\]"
+                    }
+                }
+            ],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-nav2",
+                "clear": true
+            }
+        },
+        {
             "label": "ROS2: Build (Debug)",
             "type": "shell",
             "command": "bash",
