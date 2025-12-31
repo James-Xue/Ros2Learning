@@ -46,7 +46,7 @@ public:
       return;
     }
 
-    auto result_future = goal_handle->async_result();
+    auto result_future = action_client_->async_get_result(goal_handle);
     auto result_code =
       rclcpp::spin_until_future_complete(shared_from_this(), result_future, 60s);
 

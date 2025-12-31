@@ -39,7 +39,9 @@ fi
 
 # Base + workspace overlay
 # shellcheck disable=SC1090
+set +u
 source "/opt/ros/${ros_distro}/setup.bash"
+set -u
 cd "${workspace_dir}"
 
 prefix BUILD "colcon build (Debug)"
@@ -49,7 +51,9 @@ colcon build --symlink-install \
   --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 
 # shellcheck disable=SC1091
+set +u
 source "${workspace_dir}/install/setup.bash"
+set -u
 
 export TURTLEBOT3_MODEL="${tb3_model}"
 
