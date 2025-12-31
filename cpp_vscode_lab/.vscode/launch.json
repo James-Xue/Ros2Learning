@@ -16,8 +16,12 @@
                 "../csu": "${workspaceFolder}/third_party/glibc/csu",
                 "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
-                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include": "/usr/include/c++/13",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu": "/usr/include/x86_64-linux-gnu/c++/13"
             },
             "logging": {
                 "engineLogging": true
@@ -49,8 +53,23 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc string/../sysdeps paths to local sources",
+                    "text": "set substitute-path ./string/../sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
                     "text": "directory third_party/glibc",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ distro build paths (std::string, etc.) to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include /usr/include/c++/13",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ arch-specific headers to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu /usr/include/x86_64-linux-gnu/c++/13",
                     "ignoreFailures": true
                 }
             ],
@@ -76,8 +95,12 @@
                 "../csu": "${workspaceFolder}/third_party/glibc/csu",
                 "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
-                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include": "/usr/include/c++/13",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu": "/usr/include/x86_64-linux-gnu/c++/13"
             },
             "logging": {
                 "engineLogging": true
@@ -109,8 +132,23 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc string/../sysdeps paths to local sources",
+                    "text": "set substitute-path ./string/../sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
                     "text": "directory third_party/glibc",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ distro build paths (std::string, etc.) to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include /usr/include/c++/13",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ arch-specific headers to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu /usr/include/x86_64-linux-gnu/c++/13",
                     "ignoreFailures": true
                 }
             ],
@@ -131,8 +169,12 @@
                 "../csu": "${workspaceFolder}/third_party/glibc/csu",
                 "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
-                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include": "/usr/include/c++/13",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu": "/usr/include/x86_64-linux-gnu/c++/13"
             },
             "logging": {
                 "engineLogging": true
@@ -164,8 +206,23 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc string/../sysdeps paths to local sources",
+                    "text": "set substitute-path ./string/../sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
                     "text": "directory third_party/glibc",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ distro build paths (std::string, etc.) to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include /usr/include/c++/13",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ arch-specific headers to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu /usr/include/x86_64-linux-gnu/c++/13",
                     "ignoreFailures": true
                 }
             ],
@@ -186,8 +243,12 @@
                 "../csu": "${workspaceFolder}/third_party/glibc/csu",
                 "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
-                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include": "/usr/include/c++/13",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu": "/usr/include/x86_64-linux-gnu/c++/13"
             },
             "logging": {
                 "engineLogging": true
@@ -219,8 +280,23 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc string/../sysdeps paths to local sources",
+                    "text": "set substitute-path ./string/../sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
                     "text": "directory third_party/glibc",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ distro build paths (std::string, etc.) to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include /usr/include/c++/13",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ arch-specific headers to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu /usr/include/x86_64-linux-gnu/c++/13",
                     "ignoreFailures": true
                 }
             ],
@@ -241,8 +317,12 @@
                 "../csu": "${workspaceFolder}/third_party/glibc/csu",
                 "./sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "./string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
+                "../string/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
-                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
+                "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include": "/usr/include/c++/13",
+                "/build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu": "/usr/include/x86_64-linux-gnu/c++/13"
             },
             "logging": {
                 "engineLogging": true
@@ -274,8 +354,23 @@
                     "ignoreFailures": true
                 },
                 {
+                    "description": "Map glibc string/../sysdeps paths to local sources",
+                    "text": "set substitute-path ./string/../sysdeps third_party/glibc/sysdeps",
+                    "ignoreFailures": true
+                },
+                {
                     "description": "Add glibc source directory (for stepping into libc startup code)",
                     "text": "directory third_party/glibc",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ distro build paths (std::string, etc.) to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include /usr/include/c++/13",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Map libstdc++ arch-specific headers to local headers",
+                    "text": "set substitute-path /build/gcc-14-ig5ci0/gcc-14-14.2.0/build/x86_64-linux-gnu/libstdc++-v3/include/x86_64-linux-gnu /usr/include/x86_64-linux-gnu/c++/13",
                     "ignoreFailures": true
                 }
             ],
