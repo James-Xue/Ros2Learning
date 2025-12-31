@@ -42,6 +42,37 @@
             ]
         },
         {
+            "name": "ROS2: Debug nav2_client (Debug build)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/usr/bin/bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && exec '${workspaceFolder}/ros2_ws/install/ros2_learning_cpp/lib/ros2_learning_cpp/nav2_client'"
+            ],
+            "MIMode": "gdb",
+            "miDebuggerPath": "/usr/bin/gdb",
+            "cwd": "${workspaceFolder}/ros2_ws",
+            "externalConsole": false,
+            "justMyCode": false,
+            "sourceFileMap": {
+                "/usr/src/ros-jazzy-rclcpp-": "${workspaceFolder}/third_party/rclcpp_repo/rclcpp"
+            },
+            "preLaunchTask": "ROS2: Build (Debug)",
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing",
+                    "text": "-enable-pretty-printing",
+                    "ignoreFailures": true
+                },
+                {
+                    "description": "Enable debuginfod (auto-fetch debug symbols if available)",
+                    "text": "-gdb-set debuginfod enabled on",
+                    "ignoreFailures": true
+                }
+            ]
+        },
+        {
             "name": "ROS2: Debug listener (Debug build)",
             "type": "cppdbg",
             "request": "launch",
