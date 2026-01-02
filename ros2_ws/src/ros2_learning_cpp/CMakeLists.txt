@@ -14,10 +14,18 @@ find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
-add_executable(talker src/talker.cpp)
+add_executable(talker
+  src/talker.cpp
+  src/talker_main.cpp
+)
+target_include_directories(talker PRIVATE include)
 ament_target_dependencies(talker rclcpp std_msgs)
 
-add_executable(listener src/listener.cpp)
+add_executable(listener
+  src/listener.cpp
+  src/listener_main.cpp
+)
+target_include_directories(listener PRIVATE include)
 ament_target_dependencies(listener rclcpp std_msgs)
 
 add_executable(nav2_client
