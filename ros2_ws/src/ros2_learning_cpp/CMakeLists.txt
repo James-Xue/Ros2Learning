@@ -20,7 +20,11 @@ ament_target_dependencies(talker rclcpp std_msgs)
 add_executable(listener src/listener.cpp)
 ament_target_dependencies(listener rclcpp std_msgs)
 
-add_executable(nav2_client src/nav2_client.cpp)
+add_executable(nav2_client
+  src/nav2_client.cpp
+  src/nav2_client_main.cpp
+)
+target_include_directories(nav2_client PRIVATE include)
 ament_target_dependencies(nav2_client
   rclcpp
   rclcpp_action
@@ -36,5 +40,11 @@ install(TARGETS
   nav2_client
   DESTINATION lib/${PROJECT_NAME}
 )
+
+install(DIRECTORY include/
+  DESTINATION include
+)
+
+ament_export_include_directories(include)
 
 ament_package()
