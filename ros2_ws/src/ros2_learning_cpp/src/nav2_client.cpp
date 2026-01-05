@@ -3,10 +3,10 @@
 using namespace std::chrono_literals;
 
 Nav2Client::Nav2Client()
-    : Node("nav2_minimal_client")
+        : Node("nav2_minimal_client")
 {
-    this->declare_parameter<bool>("use_sim_time", true);
-    this->set_parameter(rclcpp::Parameter("use_sim_time", this->get_parameter("use_sim_time").as_bool()));
+    // this->declare_parameter<bool>("use_sim_time", true);
+    // sthis->set_parameter(rclcpp::Parameter("use_sim_time", this->get_parameter("use_sim_time").as_bool()));
 
     mInitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
     mActionClient = rclcpp_action::create_client<NavigateToPose>(this, "navigate_to_pose");
@@ -118,7 +118,7 @@ Nav2Client::GoalHandle::SharedPtr Nav2Client::send_goal()
     auto send_goal_options = NavigateClient::SendGoalOptions();
     send_goal_options.feedback_callback =
         [this](GoalHandle::SharedPtr, const std::shared_ptr<const NavigateToPose::Feedback> feedback)
-        { RCLCPP_INFO(get_logger(), "Remaining distance: %.2f", feedback->distance_remaining); };
+    { RCLCPP_INFO(get_logger(), "Remaining distance: %.2f", feedback->distance_remaining); };
 
     auto goal_handle_future = mActionClient->async_send_goal(goal_msg, send_goal_options);
 
