@@ -1,5 +1,9 @@
 #include "ros2_learning_cpp/nav2_client.hpp"
 
+#include <tf2/exceptions.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
+
 using namespace std::chrono_literals;
 
 Nav2Client::Nav2Client()
@@ -23,6 +27,7 @@ void Nav2Client::run()
     }
 
     publish_initial_pose();
+    wait_for_tf();
 
     auto goal_handle = send_goal();
     if (!goal_handle)
@@ -58,6 +63,27 @@ void Nav2Client::run()
         RCLCPP_WARN(get_logger(), "Navigation timeout, canceling goal.");
         auto cancel_future = mActionClient->async_cancel_goal(goal_handle);
         rclcpp::spin_until_future_complete(shared_from_this(), cancel_future, 5s);
+    }
+}
+
+void Nav2Client::wait_for_tf()
+{
+    tf2_ros::Buffer tf_buffer(this->get_clock());
+    tf2_ros::TransformListener tf_listener(tf_buffer);
+
+    RCLCPP_INFO(get_logger(), "Waiting for TF map -> base_link...");
+    while (rclcpp::ok())
+    {
+        try
+        {
+            tf_buffer.lookupTransform("map", "base_link", tf2::TimePointZero);
+            RCLCPP_INFO(get_logger(), "TF map -> base_link is available.");
+            break;
+        }
+        catch (const tf2::TransformException &ex)
+        {
+            rclcpp::sleep_for(200ms);
+        }
     }
 }
 
