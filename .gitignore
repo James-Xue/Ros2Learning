@@ -63,3 +63,6 @@
 
 # ---- Local debug sources (fetched on-demand, do not upload) ----
 /third_party/rclcpp_repo/
+
+# ---- Local notes (developer-specific, do not upload) ----
+/note.txt

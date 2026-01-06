@@ -9,7 +9,10 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
-add_executable(teleop_keyboard src/teleop_keyboard.cpp)
+add_executable(teleop_keyboard
+  src/teleop_keyboard.cpp
+  src/terminal_raw_mode.cpp
+)
 ament_target_dependencies(teleop_keyboard rclcpp geometry_msgs)
 
 target_include_directories(teleop_keyboard PUBLIC

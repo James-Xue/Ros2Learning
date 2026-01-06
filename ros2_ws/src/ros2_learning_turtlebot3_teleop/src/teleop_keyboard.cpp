@@ -6,16 +6,17 @@
 #include <cstdio>
 #include <cstring>
 #include <memory>
+#include <string>
 
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <rclcpp/rclcpp.hpp>
 
 #include "ros2_learning_turtlebot3_teleop/teleop_keyboard_node.hpp"
+#include "ros2_learning_turtlebot3_teleop/terminal_raw_mode.hpp"
 
 #include <errno.h>
 #include <fcntl.h>
 #include <sys/select.h>
-#include <termios.h>
 #include <unistd.h>
 
 using namespace std::chrono_literals;
@@ -24,60 +25,6 @@ using namespace std::chrono_literals;
 // 外部只需要知道 TeleopKeyboardNode。
 namespace ros2_learning_turtlebot3_teleop::detail
 {
-class TerminalRawMode
-{
-  public:
-    TerminalRawMode() = default;
-    TerminalRawMode(const TerminalRawMode &) = delete;
-    TerminalRawMode &operator=(const TerminalRawMode &) = delete;
-
-    bool enable()
-    {
-        if (!isatty(STDIN_FILENO))
-        {
-            return false;
-        }
-
-        if (tcgetattr(STDIN_FILENO, &old_) != 0)
-        {
-            return false;
-        }
-
-        termios raw = old_;
-        // 关闭规范模式与回显：这样就能不按回车立刻读到单个字符。
-        raw.c_lflag &= static_cast<unsigned>(~(ICANON | ECHO));
-        raw.c_cc[VMIN] = 0;
-        raw.c_cc[VTIME] = 0;
-
-        if (tcsetattr(STDIN_FILENO, TCSANOW, &raw) != 0)
-        {
-            return false;
-        }
-
-        enabled_ = true;
-        return true;
-    }
-
-    void disable()
-    {
-        if (!enabled_)
-        {
-            return;
-        }
-        (void)tcsetattr(STDIN_FILENO, TCSANOW, &old_);
-        enabled_ = false;
-    }
-
-    ~TerminalRawMode()
-    {
-        disable();
-    }
-
-  private:
-    termios old_{};
-    bool enabled_{false};
-};
-
 int read_key_nonblocking()
 {
     fd_set readfds;
