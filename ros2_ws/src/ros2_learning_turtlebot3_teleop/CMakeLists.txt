@@ -12,9 +12,18 @@ find_package(geometry_msgs REQUIRED)
 add_executable(teleop_keyboard src/teleop_keyboard.cpp)
 ament_target_dependencies(teleop_keyboard rclcpp geometry_msgs)
 
+target_include_directories(teleop_keyboard PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 install(TARGETS
   teleop_keyboard
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 ament_package()
