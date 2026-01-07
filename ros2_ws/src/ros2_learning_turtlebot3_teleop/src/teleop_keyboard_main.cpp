@@ -5,7 +5,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 
-#include "ros2_learning_turtlebot3_teleop/teleop_keyboard_node.hpp"
+#include "teleop_keyboard_node.hpp"
 
 int main(int argc, char **argv)
 {

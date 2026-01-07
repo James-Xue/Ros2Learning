@@ -22,8 +22,8 @@
 #include <geometry_msgs/msg/twist_stamped.hpp>
 #include <rclcpp/rclcpp.hpp>
 
-#include "ros2_learning_turtlebot3_teleop/teleop_keyboard_node.hpp"
-#include "ros2_learning_turtlebot3_teleop/terminal_raw_mode.hpp"
+#include "teleop_keyboard_node.hpp"
+#include "terminal_raw_mode.hpp"
 
 #include <errno.h>
 #include <fcntl.h>

@@ -139,6 +139,15 @@ flowchart LR
 - `robot_navigation`：`nav2` 参数与行为树。
 - `robot_teleop`：键盘/手柄遥控。
 
+### 头文件组织约定（本仓库偏好）
+
+为减少目录层级、提升可读性，本仓库的 ROS 2 包采用“扁平 include”组织方式：
+
+- 头文件直接放在 `include/` 下（例如 `ros2_ws/src/<pkg>/include/foo.hpp`）
+- 源文件包含时使用 `#include "foo.hpp"`，而不是 `#include "<pkg>/foo.hpp"`
+
+注意：这种做法在多包/多依赖场景下可能出现“不同包头文件同名”冲突；一旦发生，建议改回 `include/<pkg>/...` 或给头文件加更明确的前缀命名。
+
 ### 关键话题与 TF（约定）
 
 - 话题：`cmd_vel`、`odom`、`scan`、`imu`、`map`、`tf`

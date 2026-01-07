@@ -1,9 +1,9 @@
-#include "ros2_learning_cpp/talker.hpp"
+#include "talker.hpp"
 
 using namespace std::chrono_literals;
 
 TalkerNode::TalkerNode()
-: rclcpp::Node("talker")
+        : rclcpp::Node("talker")
 {
     publisher_ = create_publisher<std_msgs::msg::String>("chatter", 10);
     timer_ = create_wall_timer(500ms, std::bind(&TalkerNode::on_timer, this));

@@ -1,8 +1,8 @@
 #include <memory>
 
-#include "ros2_learning_cpp/talker.hpp"
+#include "talker.hpp"
 
-int main(int argc, char ** argv)
+int main(int argc, char **argv)
 {
     rclcpp::init(argc, argv);
     rclcpp::spin(std::make_shared<TalkerNode>());
