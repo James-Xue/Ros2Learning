@@ -13,7 +13,7 @@
 
 class Nav2Client : public rclcpp::Node
 {
-public:
+  public:
     using NavigateToPose = nav2_msgs::action::NavigateToPose;
     using GoalHandle = rclcpp_action::ClientGoalHandle<NavigateToPose>;
     using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
@@ -25,9 +25,10 @@ public:
 
     void run();
 
-private:
+  private:
     bool wait_for_server();
     void wait_for_time();
+    void wait_for_tf();
     void publish_initial_pose();
     GoalHandle::SharedPtr send_goal();
 
