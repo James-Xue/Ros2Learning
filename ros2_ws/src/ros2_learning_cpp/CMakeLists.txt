@@ -7,11 +7,6 @@ endif()
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(rclcpp_action REQUIRED)
-find_package(nav2_msgs REQUIRED)
-find_package(geometry_msgs REQUIRED)
-find_package(tf2 REQUIRED)
-find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 
 add_executable(talker
@@ -28,24 +23,9 @@ add_executable(listener
 target_include_directories(listener PRIVATE include)
 ament_target_dependencies(listener rclcpp std_msgs)
 
-add_executable(nav2_client
-  src/nav2_client.cpp
-  src/nav2_client_main.cpp
-)
-target_include_directories(nav2_client PRIVATE include)
-ament_target_dependencies(nav2_client
-  rclcpp
-  rclcpp_action
-  nav2_msgs
-  geometry_msgs
-  tf2
-  tf2_geometry_msgs
-)
-
 install(TARGETS
   talker
   listener
-  nav2_client
   DESTINATION lib/${PROJECT_NAME}
 )
 

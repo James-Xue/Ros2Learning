@@ -48,7 +48,7 @@
             "program": "/usr/bin/bash",
             "args": [
                 "-lc",
-                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && exec '${workspaceFolder}/ros2_ws/install/ros2_learning_cpp/lib/ros2_learning_cpp/nav2_client'"
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && exec '${workspaceFolder}/ros2_ws/install/ros2_learning_nav2_client/lib/ros2_learning_nav2_client/nav2_client'"
             ],
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",

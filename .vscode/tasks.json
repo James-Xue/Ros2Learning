@@ -37,7 +37,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_turtlebot3_teleop --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_nav2_client ros2_learning_turtlebot3_teleop --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
             "problemMatcher": [],
             "group": {
@@ -51,7 +51,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_nav2_client --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
             "problemMatcher": [],
             "group": "build"
@@ -87,6 +87,23 @@
                 "reveal": "always",
                 "panel": "dedicated",
                 "group": "ros2-demo",
+                "clear": true
+            }
+        },
+        {
+            "label": "ROS2: Run nav2_client (integrated terminal)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && ros2 run ros2_learning_nav2_client nav2_client"
+            ],
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-nav2",
                 "clear": true
             }
         }

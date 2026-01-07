@@ -1,7 +1,7 @@
 #include <memory>
 
 #include "rclcpp/rclcpp.hpp"
-#include "ros2_learning_cpp/nav2_client.hpp"
+#include "ros2_learning_nav2_client/nav2_client.hpp"
 
 int main(int argc, char **argv)
 {

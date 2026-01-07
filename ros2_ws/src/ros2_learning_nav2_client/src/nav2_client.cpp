@@ -1,5 +1,5 @@
 // 包含本包对应的头文件，声明了 Nav2Client 类与相关类型
-#include "ros2_learning_cpp/nav2_client.hpp"
+#include "ros2_learning_nav2_client/nav2_client.hpp"
 
 // 引入 tf2 相关异常类型（用于捕获 transform 查找中的异常）
 #include <tf2/exceptions.h>
