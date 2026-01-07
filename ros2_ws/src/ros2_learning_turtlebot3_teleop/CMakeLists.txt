@@ -11,6 +11,7 @@ find_package(geometry_msgs REQUIRED)
 
 add_executable(teleop_keyboard
   src/teleop_keyboard.cpp
+  src/teleop_keyboard_main.cpp
   src/terminal_raw_mode.cpp
 )
 ament_target_dependencies(teleop_keyboard rclcpp geometry_msgs)

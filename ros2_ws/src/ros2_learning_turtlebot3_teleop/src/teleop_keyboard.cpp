@@ -282,14 +282,3 @@ void TeleopKeyboardNode::process_keyboard()
         }
     }
 }
-
-int main(int argc, char **argv)
-{
-    // 标准 rclcpp main：init -> spin -> shutdown
-    // 调试时可以在这里或 TeleopKeyboardNode 构造函数内下断点。
-    rclcpp::init(argc, argv);
-    auto node = std::make_shared<TeleopKeyboardNode>();
-    rclcpp::spin(node);
-    rclcpp::shutdown();
-    return 0;
-}
