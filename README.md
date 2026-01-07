@@ -1,16 +1,51 @@
 # Ros2Learning
 
-A ROS 2 simulation project for an autonomous vacuum robot.
+一个用于学习 ROS 2（以 Jazzy 为主）与仿真导航（Gazebo / Nav2 / RViz）的学习型仓库。
 
-## Quickstart
+本仓库重点：
 
-> 前提：已安装对应 ROS 2（如 `/opt/ros/jazzy` 存在）。
+- 在本地 Linux 上可构建、可运行、可调试
+- 用小步迭代方式搭建“仿真优先”的移动机器人栈
+
+## 快速索引
+
+- 只想验证环境/手感：看「新手最快仿真（TurtleBot3 官方示例）」
+- 想跑本仓库 ROS 2 包：看「Quickstart（本仓库工作空间）」
+- 想 VS Code 单步进入 rclcpp：看「VS Code 调试：步入 rclcpp 源码」
+
+## Quickstart（本仓库工作空间）
+
+前提：已安装对应 ROS 2（例如 `/opt/ros/jazzy` 存在）。
 
 ```bash
 cd Ros2Learning/ros2_ws
-./scripts/setup_ubuntu.sh jazzy   # 可选
+
+# 可选：安装常用依赖 + rosdep（需要 sudo）
+./scripts/setup_ubuntu.sh jazzy
+
+# 构建工作空间（colcon build --symlink-install）
 ./scripts/build.sh jazzy
+
+# 叠加工作空间环境（后续 ros2 run/launch 需要）
 source ./scripts/source.sh jazzy
+```
+
+### 最小验证（talker/listener）
+
+终端 A：
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 run ros2_learning_cpp talker
+```
+
+终端 B：
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 run ros2_learning_cpp listener
 ```
 
 ## VS Code 调试：步入 rclcpp 源码
@@ -23,35 +58,46 @@ source ./scripts/source.sh jazzy
 ./ros2_ws/scripts/setup_rclcpp_source.sh jazzy
 ```
 
-## 新手最快仿真（先动起来）
+## 新手最快仿真（TurtleBot3 官方示例）
 
-> 说明：当前仓库尚未内置完整仿真包。想“立刻让小车动起来”，可以先用官方示例验证环境与手感，再回到本仓库按规划补齐包。
+> 说明：当前仓库尚未内置完整仿真包。想“立刻让小车动起来”，推荐先用官方示例验证环境与手感，再回到本仓库按规划补齐包。
 
 1) 安装 TurtleBot3 仿真与遥控（Ubuntu + Jazzy）
+
 ```bash
 sudo apt install ros-jazzy-turtlebot3-gazebo ros-jazzy-turtlebot3-teleop
 ```
 
-2) 启动 Gazebo 仿真
+2) 启动 Gazebo 仿真（常规）
+
 ```bash
 export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ```
 
+2.1) 如果你的 OpenGL/显卡驱动导致 Gazebo 黑屏或崩溃，可用软件渲染方式启动（保留备用）：
+
+```bash
+export LIBGL_ALWAYS_SOFTWARE=1
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
 3) 新终端键盘遥控（WASD）
+
 ```bash
 source /opt/ros/jazzy/setup.bash
 ros2 run ros2_learning_turtlebot3_teleop teleop_keyboard
 ```
 
-> 常见卡点：Gazebo 未安装/未启动、`TURTLEBOT3_MODEL` 未设置、ROS 发行版不一致。
+常见卡点：Gazebo 未安装/未启动、`TURTLEBOT3_MODEL` 未设置、ROS 发行版不一致。
 
 ## 仿真优先的总体设计（Gazebo + Jazzy）
 
-> 说明：当前阶段以仿真为主，硬件暂不接入。方案成熟后再进入实现阶段。
-> 目标读者：未接触过 ROS 的新手，但已了解话题、服务等基础概念。
+说明：当前阶段以仿真为主，硬件暂不接入。方案成熟后再进入实现阶段。
+目标读者：未接触过 ROS 的新手，但已了解话题、服务等基础概念。
 
 ### 架构示意（方向性）
+
 ```mermaid
 flowchart LR
   subgraph Sim[Gazebo Sim（仿真环境）]
@@ -76,6 +122,7 @@ flowchart LR
 ```
 
 ### 总体架构（分层）
+
 - 硬件抽象层：底盘与传感器接口（仿真中由 Gazebo 提供）。
 - 感知层：里程计融合、障碍物感知、代价地图。
 - 定位与建图：`slam_toolbox`（学习阶段优先）。
@@ -83,6 +130,7 @@ flowchart LR
 - 应用层：遥控、巡航、定点导航等学习示例。
 
 ### 包划分（多包，colcon 管理）
+
 - `robot_description`：URDF/Xacro、TF 树、传感器定义。
 - `robot_gz`：Gazebo 世界与模型资源、仿真启动、桥接配置。
 - `robot_control`：`ros2_control` 与 diff drive 控制。
@@ -92,16 +140,19 @@ flowchart LR
 - `robot_teleop`：键盘/手柄遥控。
 
 ### 关键话题与 TF（约定）
+
 - 话题：`cmd_vel`、`odom`、`scan`、`imu`、`map`、`tf`
 - TF：`map -> odom -> base_link -> base_laser/base_imu/base_camera`
 
 ### 仿真验证的最小里程碑
+
 1) Gazebo 中小车模型可加载
 2) `cmd_vel` 控制底盘运动
 3) `scan`/`imu`/`odom` 数据正常发布
 4) RViz 中可视化 TF 与传感器数据
 
 ### 下一步优化方向（方案先行）
+
 - 明确 Gazebo Sim（Harmonic）与 `ros_gz` 的桥接话题映射
 - 统一参数目录与命名规范（`config/*.yaml`）
 - 设计可复用的 launch 分层（仿真/建图/导航）
@@ -111,6 +162,7 @@ flowchart LR
 > 时间为单人估算（学习型项目，按自然日计）。
 
 ### 基本概念定义（严谨版）
+
 - Gazebo Sim：机器人仿真器，用物理引擎模拟机器人在虚拟世界中的运动与传感器输出。
 - ROS 2：机器人软件框架，提供节点、话题、服务、参数与工具链。
 - 工作空间（workspace）：一个包含多个 ROS 2 包的目录，使用 `colcon` 统一构建与运行。
@@ -128,30 +180,37 @@ flowchart LR
 - `slam_toolbox`：SLAM 工具，用于同时定位与建图。
 
 ### M0：环境与基础概念熟悉（1-2 天）
+
 - 工作内容：安装 ROS 2 Jazzy 与 Gazebo Sim（Harmonic）；理解“工作空间=项目目录”“包=功能模块”“节点=运行中的程序”“话题=消息通道”；能运行官方示例。
 - 验收标准：`ros2` 与 `gz` 命令可用；`ros2 run demo_nodes_cpp talker` 与 `listener` 可互通；`ros2 topic list` 能看到示例话题。
 
 ### M1：机器人描述与仿真模型（2-3 天）
+
 - 工作内容：完成小车 URDF/Xacro（机器人“结构说明书”）；理解 TF（坐标系）与 `robot_state_publisher`（发布各坐标系关系）。
 - 验收标准：Gazebo 中可加载模型；`tf` 中存在 `base_link` 与 `base_laser` 等传感器帧；RViz 可显示机器人模型。
 
 ### M2：底盘控制与话题闭环（2-3 天）
+
 - 工作内容：接入 `ros2_control` diff drive（差速底盘控制）；理解 `cmd_vel`（速度指令）与 `odom`（里程计）含义。
 - 验收标准：`ros2 topic pub /cmd_vel ...` 可驱动模型移动；`/odom` 持续发布且数值合理；停止发指令后速度归零。
 
 ### M3：传感器模拟与桥接（2-3 天）
+
 - 工作内容：配置 Gazebo 传感器插件（雷达/IMU/相机）；通过 `ros_gz_bridge` 把 Gazebo 话题转为 ROS 话题；理解常见消息类型（如 `sensor_msgs/LaserScan`、`Imu`）。
 - 验收标准：`/scan`、`/imu`、`/camera`（如启用）在 ROS 侧稳定发布；RViz 可显示点云/雷达与 IMU 姿态。
 
 ### M4：建图与可视化（2-3 天）
+
 - 工作内容：集成 `slam_toolbox`（同步定位与建图）；理解 `map`（全局地图）、`odom`（短期里程计）、`base_link`（机器人本体）的层级关系。
 - 验收标准：RViz 中实时生成 `map` 并可保存；TF 树无断链与明显跳变；建图过程稳定无明显漂移。
 
 ### M5：导航与示例任务（3-5 天）
+
 - 工作内容：集成 `nav2`（导航框架）；理解代价地图（障碍物区域）、全局/局部规划器；完成定点导航示例。
 - 验收标准：给定目标点后小车可规划与到达；路径平滑、无明显抖动或频繁重规划；到达后稳定停止。
 
 ### 开发流程（建议）
+
 ```mermaid
 flowchart TD
   A[明确需求/里程碑（目标与范围）] --> B[设计包划分与话题/TF（接口约定）]
@@ -165,26 +224,26 @@ flowchart TD
 
 > 说明：占位命令需替换为实际 launch 名称。
 
-1) 启动仿真与系统  
-   - 示例：`ros2 launch robot_bringup sim.launch.py`  
+1) 启动仿真与系统
+   - 示例：`ros2 launch robot_bringup sim.launch.py`
    - 验收：Gazebo 打开且小车可见；终端无致命报错。
 
-2) 节点存活检查  
-   - 命令：`ros2 node list`  
+2) 节点存活检查
+   - 命令：`ros2 node list`
    - 验收：关键节点存在（控制、桥接、状态发布等）。
 
-3) 话题发布检查  
-   - 命令：`ros2 topic list`、`ros2 topic info /cmd_vel`、`ros2 topic info /odom`、`ros2 topic info /scan`  
+3) 话题发布检查
+   - 命令：`ros2 topic list`、`ros2 topic info /cmd_vel`、`ros2 topic info /odom`、`ros2 topic info /scan`
    - 验收：关键话题存在，类型正确，且有发布者。
 
-4) 话题频率与数据检查  
-   - 命令：`ros2 topic hz /odom`、`ros2 topic hz /scan`、`ros2 topic echo /odom --once`  
+4) 话题频率与数据检查
+   - 命令：`ros2 topic hz /odom`、`ros2 topic hz /scan`、`ros2 topic echo /odom --once`
    - 验收：`/odom`、`/scan` 有稳定频率；`/odom` 数据非零且合理。
 
-5) TF 连通性检查  
-   - 命令：`ros2 run tf2_ros tf2_echo map base_link` 或 `ros2 run tf2_tools view_frames`  
+5) TF 连通性检查
+   - 命令：`ros2 run tf2_ros tf2_echo map base_link` 或 `ros2 run tf2_tools view_frames`
    - 验收：`map -> odom -> base_link` 连通无报错。
 
-6) 控制闭环验证  
-   - 命令：`ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angular: {z: 0.0}}" -r 10`  
+6) 控制闭环验证
+   - 命令：`ros2 topic pub /cmd_vel geometry_msgs/msg/Twist "{linear: {x: 0.2}, angular: {z: 0.0}}" -r 10`
    - 验收：模型在 Gazebo 中移动，`/odom` 变化连续。
