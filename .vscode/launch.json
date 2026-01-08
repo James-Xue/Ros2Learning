@@ -25,7 +25,8 @@
             "externalConsole": false,
             "justMyCode": false,
             "sourceFileMap": {
-                "/usr/src/ros-jazzy-rclcpp-": "${workspaceFolder}/third_party/rclcpp_repo/rclcpp"
+                "/usr/src/ros-jazzy-rclcpp-28.1.13-1noble.20251025.081428": "${workspaceFolder}/third_party/rclcpp_repo",
+                "/usr/src/ros-jazzy-rcutils-6.7.4-1noble.20250822.213450": "${workspaceFolder}/third_party/rcutils_repo"
             },
             "preLaunchTask": "ROS2: Build (Debug)",
             "setupCommands": [
@@ -56,7 +57,8 @@
             "externalConsole": false,
             "justMyCode": false,
             "sourceFileMap": {
-                "/usr/src/ros-jazzy-rclcpp-": "${workspaceFolder}/third_party/rclcpp_repo/rclcpp"
+                "/usr/src/ros-jazzy-rclcpp-28.1.13-1noble.20251025.081428": "${workspaceFolder}/third_party/rclcpp_repo",
+                "/usr/src/ros-jazzy-rcutils-6.7.4-1noble.20250822.213450": "${workspaceFolder}/third_party/rcutils_repo"
             },
             "preLaunchTask": "ROS2: One-click TB3+Nav2+RViz (Debug stack)",
             "setupCommands": [
@@ -107,7 +109,8 @@
             "externalConsole": false,
             "justMyCode": false,
             "sourceFileMap": {
-                "/usr/src/ros-jazzy-rclcpp-": "${workspaceFolder}/third_party/rclcpp_repo/rclcpp"
+                "/usr/src/ros-jazzy-rclcpp-28.1.13-1noble.20251025.081428": "${workspaceFolder}/third_party/rclcpp_repo",
+                "/usr/src/ros-jazzy-rcutils-6.7.4-1noble.20250822.213450": "${workspaceFolder}/third_party/rcutils_repo"
             },
             "preLaunchTask": "ROS2: Build (Debug)",
             "setupCommands": [
@@ -138,7 +141,8 @@
             "externalConsole": true,
             "justMyCode": false,
             "sourceFileMap": {
-                "/usr/src/ros-jazzy-rclcpp-": "${workspaceFolder}/third_party/rclcpp_repo/rclcpp"
+                "/usr/src/ros-jazzy-rclcpp-28.1.13-1noble.20251025.081428": "${workspaceFolder}/third_party/rclcpp_repo",
+                "/usr/src/ros-jazzy-rcutils-6.7.4-1noble.20250822.213450": "${workspaceFolder}/third_party/rcutils_repo"
             },
             "preLaunchTask": "ROS2: Build (Debug)",
             "setupCommands": [
