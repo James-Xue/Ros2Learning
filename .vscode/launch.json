@@ -1,14 +1,5 @@
 {
     "version": "0.2.0",
-    "compounds": [
-        {
-            "name": "ROS2: Attach talker + listener (ros2_learning_cpp)",
-            "configurations": [
-                "ROS2: Attach talker (ros2_learning_cpp)",
-                "ROS2: Attach listener (ros2_learning_cpp)"
-            ]
-        }
-    ],
     "configurations": [
         {
             "name": "ROS2: Debug talker (Debug build)",
@@ -154,42 +145,6 @@
                 {
                     "description": "Enable debuginfod (auto-fetch debug symbols if available)",
                     "text": "-gdb-set debuginfod enabled on",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "ROS2: Attach talker (ros2_learning_cpp)",
-            "type": "cppdbg",
-            "request": "attach",
-            "program": "${workspaceFolder}/ros2_ws/install/ros2_learning_cpp/lib/ros2_learning_cpp/talker",
-            "processId": "${command:pickProcess}",
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "cwd": "${workspaceFolder}/ros2_ws",
-            "preLaunchTask": "ROS2: Build (Debug)",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing",
-                    "text": "-enable-pretty-printing",
-                    "ignoreFailures": true
-                }
-            ]
-        },
-        {
-            "name": "ROS2: Attach listener (ros2_learning_cpp)",
-            "type": "cppdbg",
-            "request": "attach",
-            "program": "${workspaceFolder}/ros2_ws/install/ros2_learning_cpp/lib/ros2_learning_cpp/listener",
-            "processId": "${command:pickProcess}",
-            "MIMode": "gdb",
-            "miDebuggerPath": "/usr/bin/gdb",
-            "cwd": "${workspaceFolder}/ros2_ws",
-            "preLaunchTask": "ROS2: Build (Debug)",
-            "setupCommands": [
-                {
-                    "description": "Enable pretty-printing",
-                    "text": "-enable-pretty-printing",
                     "ignoreFailures": true
                 }
             ]
