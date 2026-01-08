@@ -59,26 +59,6 @@
                     "ignoreFailures": true
                 },
                 {
-                    "description": "Breakpoint: Nav2Client::run",
-                    "text": "-break-insert -f Nav2Client::run",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Breakpoint: Nav2Client::wait_for_server",
-                    "text": "-break-insert -f Nav2Client::wait_for_server",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Breakpoint: Nav2Client::publish_initial_pose",
-                    "text": "-break-insert -f Nav2Client::publish_initial_pose",
-                    "ignoreFailures": true
-                },
-                {
-                    "description": "Breakpoint: Nav2Client::send_goal",
-                    "text": "-break-insert -f Nav2Client::send_goal",
-                    "ignoreFailures": true
-                },
-                {
                     "description": "Enable debuginfod (auto-fetch debug symbols if available)",
                     "text": "-gdb-set debuginfod enabled on",
                     "ignoreFailures": true
