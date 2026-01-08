@@ -26,7 +26,6 @@ cleanup() {
   prefix STOP "Stopping Gazebo/Nav2/RViz..."
   if [[ -n "${gazebo_pid:-}" ]] && kill -0 "$gazebo_pid" 2>/dev/null; then kill "$gazebo_pid" 2>/dev/null || true; fi
   if [[ -n "${nav2_pid:-}" ]] && kill -0 "$nav2_pid" 2>/dev/null; then kill "$nav2_pid" 2>/dev/null || true; fi
-  if [[ -n "${rviz_pid:-}" ]] && kill -0 "$rviz_pid" 2>/dev/null; then kill "$rviz_pid" 2>/dev/null || true; fi
 }
 trap cleanup EXIT INT TERM
 
@@ -66,10 +65,6 @@ ros2 launch turtlebot3_navigation2 navigation2.launch.py \
   use_sim_time:=true \
   map:="/opt/ros/${ros_distro}/share/turtlebot3_navigation2/map/map.yaml" &
 nav2_pid=$!
-
-prefix LAUNCH "RViz2 tb3_navigation2.rviz"
-rviz2 -d "/opt/ros/${ros_distro}/share/turtlebot3_navigation2/rviz/tb3_navigation2.rviz" &
-rviz_pid=$!
 
 prefix READY "Stack started. (Terminate this task to stop all.)"
 
