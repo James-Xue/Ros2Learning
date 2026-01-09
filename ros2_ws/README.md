@@ -141,6 +141,27 @@ ros2 run mission_manager go_to_pose \
 
 失败（Aborted / Canceled）
 
+Nav2 学习客户端（ros2_learning_nav2_client）
+
+支持参数化设置坐标系与初始/目标位姿（示例）：
+
+text '''
+ros2 run ros2_learning_nav2_client nav2_client --ros-args \
+  -p map_frame:=map -p base_frame:=base_link \
+  -p initial_x:=0.0 -p initial_y:=0.0 -p initial_yaw:=0.0 \
+  -p goal_x:=2.0 -p goal_y:=1.5 -p goal_yaw:=1.57 \
+  -p tf_wait_timeout_sec:=10.0 \
+  -p use_sim_time:=true
+'''
+
+常用参数：
+
+ map_frame / base_frame：TF 坐标系名称
+ initial_x / initial_y / initial_yaw：初始位姿
+ goal_x / goal_y / goal_yaw：导航目标
+ tf_wait_timeout_sec：等待 TF 的超时秒数
+ use_sim_time：是否使用仿真时间（true 时等待 /clock）
+
 7. 里程碑 1 验收标准
 
 当前阶段完成情况以工程可复现性与系统稳定性为准：
