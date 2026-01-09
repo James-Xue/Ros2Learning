@@ -18,7 +18,7 @@ add_executable(nav2_client
   src/nav2_client_main.cpp
 )
 
-target_include_directories(nav2_client PRIVATE include)
+target_include_directories(nav2_client PUBLIC include)
 
 ament_target_dependencies(nav2_client
   rclcpp
