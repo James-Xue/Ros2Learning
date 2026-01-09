@@ -32,7 +32,8 @@ void Nav2Client::run()
     wait_for_time();
 
     // 等待 Nav2 的 action server 可用，如果不可用则报错并返回
-    if (!wait_for_server())
+    const bool is_server_ready = wait_for_server();
+    if (!is_server_ready)
     {
         RCLCPP_ERROR(get_logger(), "Nav2 action server unavailable.");
         return;
@@ -55,15 +56,16 @@ void Nav2Client::run()
     // 异步获取结果的 future
     auto result_future = mActionClient->async_get_result(goal_handle);
     // 等待结果，最长等待 60 秒
-    auto result_code = rclcpp::spin_until_future_complete(shared_from_this(), result_future, 60s);
+    const auto result_code = rclcpp::spin_until_future_complete(shared_from_this(), result_future, 60s);
 
     // 如果等待成功（future 返回），处理结果码
     if (result_code == rclcpp::FutureReturnCode::SUCCESS)
     {
         // 获取封装的结果对象
-        auto wrapped_result = result_future.get();
+        const auto wrapped_result = result_future.get();
+        const auto action_result_code = wrapped_result.code;
         // 根据 action 返回的 code 进行不同日志输出
-        switch (wrapped_result.code)
+        switch (action_result_code)
         {
         case rclcpp_action::ResultCode::SUCCEEDED:
             // 导航成功
@@ -89,7 +91,8 @@ void Nav2Client::run()
         RCLCPP_WARN(get_logger(), "Navigation timeout, canceling goal.");
         auto cancel_future = mActionClient->async_cancel_goal(goal_handle);
         // 等待取消操作完成，最长等待 5 秒
-        rclcpp::spin_until_future_complete(shared_from_this(), cancel_future, 5s);
+        const auto cancel_code = rclcpp::spin_until_future_complete(shared_from_this(), cancel_future, 5s);
+        (void)cancel_code;
     }
 }
 
@@ -109,7 +112,8 @@ void Nav2Client::wait_for_tf()
         try
         {
             // 尝试查找 map 到 base_link 的变换（TimePointZero 表示最新的变换）
-            tf_buffer.lookupTransform("map", "base_link", tf2::TimePointZero);
+            const auto transform_stamped = tf_buffer.lookupTransform("map", "base_link", tf2::TimePointZero);
+            (void)transform_stamped;
             // 如果没有抛出异常，说明变换可用
             RCLCPP_INFO(get_logger(), "TF map -> base_link is available.");
             break;
@@ -127,15 +131,30 @@ bool Nav2Client::wait_for_server()
 {
     RCLCPP_INFO(get_logger(), "Waiting for Nav2 action server...");
     // 等待 action server 最多 10 秒，返回是否可用
-    return mActionClient->wait_for_action_server(10s);
+    const bool is_ready = mActionClient->wait_for_action_server(10s);
+    return is_ready;
 }
 
 // 在仿真或使用 /use_sim_time 时，等待时间被发布（即时钟非 0）
 void Nav2Client::wait_for_time()
 {
-    // 当时钟的当前时间为 0 时，表示未初始化（常见于仿真刚启动），循环等待
-    while (rclcpp::ok() && this->get_clock()->now().nanoseconds() == 0)
+    // 说明：在仿真（use_sim_time=true）场景，若 /clock 尚未发布，ROS 时间会一直是 0。
+    // 这里阻塞等待直到时间变为非 0；如果进程收到退出信号（rclcpp::ok()==false），则提前返回。
+    while (true)
     {
+        const bool is_ok = rclcpp::ok();
+        if (false == is_ok)
+        {
+            return;
+        }
+
+        const rcl_duration_value_t now_ns = this->get_clock()->now().nanoseconds();
+        if (0 != now_ns)
+        {
+            return;
+        }
+
+        // 休眠避免空转占满 CPU
         rclcpp::sleep_for(100ms);
     }
 }
@@ -207,8 +226,8 @@ Nav2Client::GoalHandle::SharedPtr Nav2Client::send_goal()
     auto goal_handle_future = mActionClient->async_send_goal(goal_msg, send_goal_options);
 
     // 等待发送 goal 的 future 完成，超时时间为 5 秒；如果失败则返回 nullptr
-    if (rclcpp::spin_until_future_complete(shared_from_this(), goal_handle_future, 5s) !=
-        rclcpp::FutureReturnCode::SUCCESS)
+    const auto send_goal_code = rclcpp::spin_until_future_complete(shared_from_this(), goal_handle_future, 5s);
+    if (send_goal_code != rclcpp::FutureReturnCode::SUCCESS)
     {
         RCLCPP_ERROR(get_logger(), "Send goal call failed");
         return nullptr;
