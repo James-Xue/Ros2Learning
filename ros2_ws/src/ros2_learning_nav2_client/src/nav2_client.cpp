@@ -19,6 +19,18 @@ Nav2Client::Nav2Client()
     // this->declare_parameter<bool>("use_sim_time", true);
     // sthis->set_parameter(rclcpp::Parameter("use_sim_time", this->get_parameter("use_sim_time").as_bool()));
 
+    // 参数声明与读取：允许通过 ROS 参数覆盖默认值
+    map_frame_ = this->declare_parameter<std::string>("map_frame", "map");
+    base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
+    initial_x_ = this->declare_parameter<double>("initial_x", 0.0);
+    initial_y_ = this->declare_parameter<double>("initial_y", 0.0);
+    initial_yaw_ = this->declare_parameter<double>("initial_yaw", 0.0);
+    goal_x_ = this->declare_parameter<double>("goal_x", 1.0);
+    goal_y_ = this->declare_parameter<double>("goal_y", 0.0);
+    goal_yaw_ = this->declare_parameter<double>("goal_yaw", 0.0);
+    tf_wait_timeout_sec_ = this->declare_parameter<double>("tf_wait_timeout_sec", 10.0);
+    use_sim_time_ = this->declare_parameter<bool>("use_sim_time", false);
+
     // 创建一个发布器，用于发布初始位姿到 /initialpose 话题，队列深度为 10
     mInitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
     // 创建一个 action 客户端，用来与 Nav2 的 navigate_to_pose action 通信
@@ -28,8 +40,12 @@ Nav2Client::Nav2Client()
 // 入口运行函数：负责等待时间、等待 action server、发布初始位姿、发送目标并等待结果
 void Nav2Client::run()
 {
-    // 确保系统时间已经可用（尤其在仿真中常需要等待 /use_sim_time 更新）
-    wait_for_time();
+    // 在仿真时等待 /clock（use_sim_time=true），否则跳过等待
+    if (use_sim_time_)
+    {
+        RCLCPP_INFO(get_logger(), "use_sim_time=true, waiting for /clock...");
+        wait_for_time();
+    }
 
     // 等待 Nav2 的 action server 可用，如果不可用则报错并返回
     const bool is_server_ready = wait_for_server();
@@ -42,7 +58,12 @@ void Nav2Client::run()
     // 发布初始位姿到 /initialpose，便于在 RViz 或 AMCL 中设置初始位姿
     publish_initial_pose();
     // 等待 TF 中 map->base_link 的变换可用，确保里程计/定位信息就绪
-    wait_for_tf();
+    const bool is_tf_ready = wait_for_tf();
+    if (!is_tf_ready)
+    {
+        RCLCPP_ERROR(get_logger(), "TF is not available within timeout, aborting.");
+        return;
+    }
 
     // 发送导航目标并获取 goal_handle
     auto goal_handle = send_goal();
@@ -97,7 +118,7 @@ void Nav2Client::run()
 }
 
 // 等待 TF 中 map -> base_link 变换可用的函数
-void Nav2Client::wait_for_tf()
+bool Nav2Client::wait_for_tf()
 {
     // 使用节点的时钟构造一个 tf2 buffer，用来缓存变换
     tf2_ros::Buffer tf_buffer(this->get_clock());
@@ -105,25 +126,36 @@ void Nav2Client::wait_for_tf()
     tf2_ros::TransformListener tf_listener(tf_buffer);
 
     // 打印等待信息
-    RCLCPP_INFO(get_logger(), "Waiting for TF map -> base_link...");
+    RCLCPP_INFO(get_logger(), "Waiting for TF %s -> %s...", map_frame_.c_str(), base_frame_.c_str());
+    const auto start_time = this->now();
     // 循环直到 ROS 关闭或变换可用
     while (rclcpp::ok())
     {
         try
         {
             // 尝试查找 map 到 base_link 的变换（TimePointZero 表示最新的变换）
-            const auto transform_stamped = tf_buffer.lookupTransform("map", "base_link", tf2::TimePointZero);
+            const auto transform_stamped =
+                tf_buffer.lookupTransform(map_frame_, base_frame_, tf2::TimePointZero);
             (void)transform_stamped;
             // 如果没有抛出异常，说明变换可用
-            RCLCPP_INFO(get_logger(), "TF map -> base_link is available.");
-            break;
+            RCLCPP_INFO(get_logger(), "TF %s -> %s is available.", map_frame_.c_str(), base_frame_.c_str());
+            return true;
         }
         catch (const tf2::TransformException &ex)
         {
+            RCLCPP_DEBUG(get_logger(), "TF lookup failed: %s", ex.what());
             // 如果查找失败则短暂休眠后重试
             rclcpp::sleep_for(200ms);
         }
+
+        if ((this->now() - start_time).seconds() > tf_wait_timeout_sec_)
+        {
+            RCLCPP_ERROR(get_logger(), "TF wait timeout after %.1f seconds.", tf_wait_timeout_sec_);
+            return false;
+        }
     }
+
+    return false;
 }
 
 // 等待 action server 可用，返回布尔值
@@ -165,16 +197,16 @@ void Nav2Client::publish_initial_pose()
     // 构造消息类型 PoseWithCovarianceStamped
     PoseWithCovarianceStamped msg;
     // 设置坐标系为 map
-    msg.header.frame_id = "map";
+    msg.header.frame_id = map_frame_;
     // 时间戳设为当前时间
     msg.header.stamp = this->now();
     // 设置初始位置 x, y
-    msg.pose.pose.position.x = 0.0;
-    msg.pose.pose.position.y = 0.0;
+    msg.pose.pose.position.x = initial_x_;
+    msg.pose.pose.position.y = initial_y_;
 
     // 构造四元数并设置为无旋转（roll/pitch/yaw 全为 0）
     tf2::Quaternion q;
-    q.setRPY(0.0, 0.0, 0.0);
+    q.setRPY(0.0, 0.0, initial_yaw_);
     // 把 tf2::Quaternion 转换为 ROS 消息的 quaternion
     msg.pose.pose.orientation = tf2::toMsg(q);
 
@@ -200,15 +232,15 @@ Nav2Client::GoalHandle::SharedPtr Nav2Client::send_goal()
 {
     // 构造目标位姿，使用 map 作为参考坐标系
     PoseStamped goal;
-    goal.header.frame_id = "map";
+    goal.header.frame_id = map_frame_;
     goal.header.stamp = this->now();
     // 设置目标位置 x, y
-    goal.pose.position.x = 1.0;
-    goal.pose.position.y = 0.0;
+    goal.pose.position.x = goal_x_;
+    goal.pose.position.y = goal_y_;
 
     // 设置目标朝向（无旋转）
     tf2::Quaternion q;
-    q.setRPY(0.0, 0.0, 0.0);
+    q.setRPY(0.0, 0.0, goal_yaw_);
     goal.pose.orientation = tf2::toMsg(q);
 
     // 构造 NavigateToPose 的 Goal 消息并赋值

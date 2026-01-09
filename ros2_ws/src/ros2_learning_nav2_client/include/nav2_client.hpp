@@ -4,6 +4,7 @@
 // 标准库：chrono 用于时间/时长类型（例：100ms、1s），memory 用于智能指针
 #include <chrono>
 #include <memory>
+#include <string>
 
 // ROS 消息类型：目标位姿和带协方差的位姿（常用于 initialpose）
 #include "geometry_msgs/msg/pose_stamped.hpp"
@@ -47,8 +48,8 @@ class Nav2Client : public rclcpp::Node
     bool wait_for_server();
     // 等待时间（use_sim_time 场景中等待时钟非 0）
     void wait_for_time();
-    // 等待 TF（如 map -> base_link）可用
-    void wait_for_tf();
+    // 等待 TF（如 map -> base_link）可用，成功返回 true
+    bool wait_for_tf();
     // 发布初始位姿到 /initialpose（带协方差）
     void publish_initial_pose();
     // 发送导航目标并返回 GoalHandle；失败时返回 nullptr
@@ -59,4 +60,16 @@ class Nav2Client : public rclcpp::Node
     PosePublisher::SharedPtr mInitialPosePublisher;
     // mActionClient: 与 Nav2 的 NavigateToPose action 交互的客户端
     NavigateClient::SharedPtr mActionClient;
+
+    // 参数化配置：坐标系与初始/目标位姿
+    std::string map_frame_;
+    std::string base_frame_;
+    double initial_x_{0.0};
+    double initial_y_{0.0};
+    double initial_yaw_{0.0};
+    double goal_x_{1.0};
+    double goal_y_{0.0};
+    double goal_yaw_{0.0};
+    double tf_wait_timeout_sec_{10.0};
+    bool use_sim_time_{false};
 };
