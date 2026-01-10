@@ -27,6 +27,8 @@ echo "[setup] Installing base tools"
 sudo apt-get install -y \
   build-essential \
   cmake \
+  curl \
+  gdb \
   git \
   python3-pip \
   python3-venv \

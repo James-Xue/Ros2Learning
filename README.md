@@ -58,6 +58,25 @@ ros2 run ros2_learning_cpp listener
 ./ros2_ws/scripts/setup_rclcpp_source.sh jazzy
 ```
 
+如果你还希望 **单步进入 libc / 动态链接器（ld.so）**（例如 `_start` / `__libc_start_main` / `libc_start_call_main.h`），再准备两件事：
+
+1) 下载与你系统 glibc 版本匹配的 glibc 源码到本仓库（不会提交到 git）：
+
+```bash
+./ros2_ws/scripts/setup_glibc_source.sh
+```
+
+2) 拉取 rcutils 源码（可选，但推荐；否则进入 rcutils 时会提示找不到源码）：
+
+```bash
+./ros2_ws/scripts/setup_rcutils_source.sh jazzy
+```
+
+完成后，使用 VS Code 的调试配置 `ROS2: Debug talker (Stop at entry, step into libc)`，可以更容易从程序入口一路 F11 进入 glibc 启动流程。
+
+补充：如果你希望“停在 talker 自己的入口”而不是先停在 `bash`，可以用调试配置 `ROS2: Debug talker (Direct envFile, stop at entry)`。
+它会先执行 Task `ROS2: Export env (jazzy)` 导出一份已 source 的 ROS2 环境到 `.vscode/ros2_jazzy.env`，然后直接启动节点二进制，更适合研究 `_start -> __libc_start_main -> main` 这条链路。
+
 ## 新手最快仿真（TurtleBot3 官方示例）
 
 > 说明：当前仓库尚未内置完整仿真包。想“立刻让小车动起来”，推荐先用官方示例验证环境与手感，再回到本仓库按规划补齐包。

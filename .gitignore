@@ -67,3 +67,9 @@
 
 # ---- Local notes (developer-specific, do not upload) ----
 /note.txt
+
+# ---- VS Code local env exports (do not upload) ----
+/.vscode/ros2_*.env
+
+# ---- GDB helper files generated locally (do not upload) ----
+/.vscode/ros2_sources.gdbinit

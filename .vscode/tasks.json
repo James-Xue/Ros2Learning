@@ -46,6 +46,58 @@
             }
         },
         {
+            "label": "ROS2: Export env (jazzy)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && mkdir -p '${workspaceFolder}/.vscode' && env > '${workspaceFolder}/.vscode/ros2_jazzy.env'"
+            ],
+            "problemMatcher": [],
+            "dependsOn": [
+                "ROS2: Build (Debug)"
+            ]
+        },
+        {
+            "label": "ROS2: Generate gdb source map (jazzy)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}' && ./ros2_ws/scripts/gen_gdb_source_map.sh jazzy"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "ROS2: Prepare debug (jazzy)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "true"
+            ],
+            "problemMatcher": [],
+            "dependsOn": [
+                "ROS2: Build (Debug)",
+                "ROS2: Export env (jazzy)",
+                "ROS2: Generate gdb source map (jazzy)"
+            ]
+        },
+        {
+            "label": "ROS2: Prepare nav2 debug (jazzy)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "true"
+            ],
+            "problemMatcher": [],
+            "dependsOn": [
+                "ROS2: Generate gdb source map (jazzy)",
+                "ROS2: One-click TB3+Nav2+RViz (Debug stack)"
+            ]
+        },
+        {
             "label": "ROS2: Build (RelWithDebInfo)",
             "type": "shell",
             "command": "bash",
