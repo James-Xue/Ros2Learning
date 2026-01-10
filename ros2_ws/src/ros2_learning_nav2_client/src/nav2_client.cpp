@@ -15,10 +15,6 @@ using namespace std::chrono_literals;
 Nav2Client::Nav2Client()
         : Node("nav2_minimal_client")
 {
-    // 以下两行被注释掉了：用于在参数服务器声明并设置 use_sim_time
-    // this->declare_parameter<bool>("use_sim_time", true);
-    // sthis->set_parameter(rclcpp::Parameter("use_sim_time", this->get_parameter("use_sim_time").as_bool()));
-
     // 参数声明与读取：允许通过 ROS 参数覆盖默认值
     map_frame_ = this->declare_parameter<std::string>("map_frame", "map");
     base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
@@ -134,8 +130,7 @@ bool Nav2Client::wait_for_tf()
         try
         {
             // 尝试查找 map 到 base_link 的变换（TimePointZero 表示最新的变换）
-            const auto transform_stamped =
-                tf_buffer.lookupTransform(map_frame_, base_frame_, tf2::TimePointZero);
+            const auto transform_stamped = tf_buffer.lookupTransform(map_frame_, base_frame_, tf2::TimePointZero);
             (void)transform_stamped;
             // 如果没有抛出异常，说明变换可用
             RCLCPP_INFO(get_logger(), "TF %s -> %s is available.", map_frame_.c_str(), base_frame_.c_str());

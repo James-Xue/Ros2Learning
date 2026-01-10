@@ -93,6 +93,8 @@
             ],
             "problemMatcher": [],
             "dependsOn": [
+                "ROS2: Build (Debug)",
+                "ROS2: Export env (jazzy)",
                 "ROS2: Generate gdb source map (jazzy)",
                 "ROS2: One-click TB3+Nav2+RViz (Debug stack)"
             ]
