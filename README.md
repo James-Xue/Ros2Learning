@@ -48,6 +48,65 @@ source ./scripts/source.sh jazzy
 ros2 run ros2_learning_cpp listener
 ```
 
+## 固定流程示例：多采集点抓取 → 投放点（仿真占位版）
+
+目标：从配置文件读取多个采集点与一个投放点，让机器人依次导航到采集点、执行“抓取”（占位服务），再导航到投放点执行“放置”（占位服务）。  
+适用：学习任务编排/导航联动，先跑通流程，后续可替换真实机械臂接口。
+
+### 包与节点说明
+
+- `ros2_learning_task_runner`：任务编排节点 `task_runner`
+  - 读取 YAML 配置（采集点/投放点）
+  - 依次执行：导航到采集点 → 调用 pick → 导航到投放点 → 调用 place
+  - 失败策略：导航失败/抓取失败则跳过当前采集点，继续下一个
+- `ros2_learning_manipulation_stub`：抓取/放置占位服务 `manipulation_stub`
+  - 提供 `/manipulation/pick` 与 `/manipulation/place`（`std_srvs/Trigger`）
+  - 仅模拟延时与日志输出
+
+### 配置文件
+
+默认配置：`ros2_ws/src/ros2_learning_task_runner/config/task_plan.yaml`
+
+```yaml
+map_frame: map
+
+dropoff:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+
+pickups:
+  - x: 1.0
+    y: 0.0
+    yaw: 0.0
+  - x: 1.0
+    y: 1.0
+    yaw: 1.57
+```
+
+### 启动与运行
+
+前提：Nav2 已启动（`navigate_to_pose` action 可用），并已 source 工作空间。
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 launch ros2_learning_task_runner task_runner_sim.launch.py
+```
+
+如果想指定自己的配置文件：
+
+```bash
+ros2 launch ros2_learning_task_runner task_runner_sim.launch.py \
+  task_config:=/absolute/path/to/task_plan.yaml
+```
+
+### 话题与接口
+
+- 导航 Action：`navigate_to_pose`（Nav2 默认 Action 名）
+- 抓取/放置服务：`/manipulation/pick`、`/manipulation/place`（`std_srvs/Trigger`）
+- 剩余距离：`/distance_remaining`（`std_msgs/Float32`，`task_runner` 发布）
+
 ## VS Code 调试：步入 rclcpp 源码
 
 本仓库的 VS Code 调试配置已包含 `sourceFileMap`，用于把系统里的 `/usr/src/ros-jazzy-rclcpp-*` 映射到本仓库本地下载的源码目录。
