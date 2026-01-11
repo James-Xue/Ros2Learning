@@ -107,6 +107,55 @@ flowchart LR
   - `/clock`（仿真时间）
   - `/odom`、`/tf`（机器人状态）
 
+### Nav2 细化视图（常见节点与接口）
+
+> 说明：不同发行版/配置会有差异，以下为常见默认节点与话题/服务。以 TurtleBot3 + Nav2 为参考。
+
+**核心节点**
+- `bt_navigator`：执行行为树导航逻辑  
+  - Action Server：`navigate_to_pose`（`nav2_msgs/action/NavigateToPose`）  
+  - Action Server：`navigate_through_poses`（`nav2_msgs/action/NavigateThroughPoses`，可选）
+
+- `planner_server`：全局路径规划  
+  - Service：`/compute_path_to_pose`（`nav2_msgs/srv/ComputePathToPose`）  
+  - Service：`/compute_path_through_poses`（`nav2_msgs/srv/ComputePathThroughPoses`，可选）
+
+- `controller_server`：局部控制器  
+  - Topic（订阅）：`/odom`  
+  - Topic（发布）：`/cmd_vel`
+
+- `smoother_server`：路径平滑（可选）  
+  - Service：`/smooth_path`
+
+- `behavior_server`：恢复行为  
+  - Action Server：`/backup`、`/spin`、`/wait` 等（可选）
+
+- `waypoint_follower`：航点跟随（可选）  
+  - Action Server：`/follow_waypoints`（`nav2_msgs/action/FollowWaypoints`）
+
+- `map_server`：地图服务  
+  - Topic（发布）：`/map`  
+  - Service：`/map_server/load_map`
+
+- `amcl`（或 `slam_toolbox`）：定位/建图  
+  - Topic（发布）：`/amcl_pose` 或 `/map`  
+  - Topic（订阅）：`/scan`、`/tf`
+
+**常用话题（导航链路）**
+- `/tf`、`/tf_static`：坐标系变换
+- `/map`：全局地图
+- `/odom`：里程计
+- `/scan`：激光雷达
+- `/cmd_vel`：速度指令
+
+**常用服务**
+- `/clear_global_costmap`、`/clear_local_costmap`（清理代价地图）
+- `/reset_lifecycle`（生命周期重置，视配置而定）
+
+**常见配置文件（参考）**
+- `nav2_params.yaml`：Nav2 参数主文件
+- `bt_navigator.xml`：行为树描述文件
+
 ### 包与节点说明
 
 - `ros2_learning_task_runner`：任务编排节点 `task_runner`
