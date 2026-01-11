@@ -48,6 +48,369 @@ source ./scripts/source.sh jazzy
 ros2 run ros2_learning_cpp listener
 ```
 
+## 固定流程示例：多采集点抓取 → 投放点（仿真占位版）
+
+目标：从配置文件读取多个采集点与一个投放点，让机器人依次导航到采集点、执行“抓取”（占位服务），再导航到投放点执行“放置”（占位服务）。  
+适用：学习任务编排/导航联动，先跑通流程，后续可替换真实机械臂接口。
+
+### 架构图（含话题/动作/服务）
+
+```mermaid
+flowchart LR
+  UI[用户/配置文件]
+  TR[task_runner]
+  NAV2[Nav2 Stack]
+  MANI[manipulation_stub]
+  SIM[Gazebo/仿真]
+
+  UI -->|task_plan.yaml| TR
+  SIM -->|/clock| TR
+
+  TR -->|Action: navigate_to_pose| NAV2
+  NAV2 -->|Feedback: distance_remaining| TR
+  TR -->|Topic: /distance_remaining| UI
+
+  TR -->|Service: /manipulation/pick| MANI
+  TR -->|Service: /manipulation/place| MANI
+
+  NAV2 -->|/cmd_vel| SIM
+  SIM -->|/odom,/tf| NAV2
+```
+
+### 节点与接口清单（话题/动作/服务）
+
+**task_runner（ros2_learning_task_runner）**
+- 订阅：无
+- 发布：
+  - `/distance_remaining`（`std_msgs/Float32`，由 Nav2 feedback 转发）
+- 调用 Action：
+  - `navigate_to_pose`（`nav2_msgs/action/NavigateToPose`）
+- 调用 Service：
+  - `/manipulation/pick`（`std_srvs/Trigger`）
+  - `/manipulation/place`（`std_srvs/Trigger`）
+- 依赖时钟：
+  - `/clock`（仿真 use_sim_time=true 时）
+
+**manipulation_stub（ros2_learning_manipulation_stub）**
+- 提供 Service：
+  - `/manipulation/pick`（`std_srvs/Trigger`）
+  - `/manipulation/place`（`std_srvs/Trigger`）
+
+**Nav2 栈（外部）**
+- 提供 Action：
+  - `navigate_to_pose`（`nav2_msgs/action/NavigateToPose`）
+- 典型话题（由 Nav2/仿真组合决定）：
+  - `/cmd_vel`、`/odom`、`/tf`、`/tf_static`
+
+**Gazebo/仿真（外部）**
+- 发布：
+  - `/clock`（仿真时间）
+  - `/odom`、`/tf`（机器人状态）
+
+### Nav2 细化视图（常见节点与接口）
+
+> 说明：不同发行版/配置会有差异，以下为常见默认节点与话题/服务。以 TurtleBot3 + Nav2 为参考。
+
+**核心节点**
+- `bt_navigator`：执行行为树导航逻辑  
+  - Action Server：`navigate_to_pose`（`nav2_msgs/action/NavigateToPose`）  
+  - Action Server：`navigate_through_poses`（`nav2_msgs/action/NavigateThroughPoses`，可选）
+
+- `planner_server`：全局路径规划  
+  - Service：`/compute_path_to_pose`（`nav2_msgs/srv/ComputePathToPose`）  
+  - Service：`/compute_path_through_poses`（`nav2_msgs/srv/ComputePathThroughPoses`，可选）
+
+- `controller_server`：局部控制器  
+  - Topic（订阅）：`/odom`  
+  - Topic（发布）：`/cmd_vel`
+
+- `smoother_server`：路径平滑（可选）  
+  - Service：`/smooth_path`
+
+- `behavior_server`：恢复行为  
+  - Action Server：`/backup`、`/spin`、`/wait` 等（可选）
+
+- `waypoint_follower`：航点跟随（可选）  
+  - Action Server：`/follow_waypoints`（`nav2_msgs/action/FollowWaypoints`）
+
+- `map_server`：地图服务  
+  - Topic（发布）：`/map`  
+  - Service：`/map_server/load_map`
+
+- `amcl`（或 `slam_toolbox`）：定位/建图  
+  - Topic（发布）：`/amcl_pose` 或 `/map`  
+  - Topic（订阅）：`/scan`、`/tf`
+
+**常用话题（导航链路）**
+- `/tf`、`/tf_static`：坐标系变换
+- `/map`：全局地图
+- `/odom`：里程计
+- `/scan`：激光雷达
+- `/cmd_vel`：速度指令
+
+**常用服务**
+- `/clear_global_costmap`、`/clear_local_costmap`（清理代价地图）
+- `/reset_lifecycle`（生命周期重置，视配置而定）
+
+**常见配置文件（参考）**
+- `nav2_params.yaml`：Nav2 参数主文件
+- `bt_navigator.xml`：行为树描述文件
+
+### 接口明细与 QoS 核对（推荐做法）
+
+不同发行版/参数/插件会改变接口细节，下面是“现场核对”的最可靠方式：
+
+```bash
+# 查看节点与接口
+ros2 node list
+ros2 action list -t
+ros2 service list -t
+ros2 topic list -t
+
+# 查看具体节点的接口（含订阅/发布/服务/动作）
+ros2 node info /bt_navigator
+ros2 node info /controller_server
+ros2 node info /planner_server
+
+# 查看话题 QoS（精确输出）
+ros2 topic info /cmd_vel --verbose
+ros2 topic info /odom --verbose
+ros2 topic info /tf --verbose
+ros2 topic info /tf_static --verbose
+
+# 查看节点参数（精确输出）
+ros2 param list /controller_server
+ros2 param list /planner_server
+ros2 param list /bt_navigator
+```
+
+### Nav2 接口明细表（模板，建议按实际输出填充）
+
+| 节点 | 接口类型 | 名称 | 类型 | QoS | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| /bt_navigator | Action Server | navigate_to_pose | nav2_msgs/action/NavigateToPose | 以 `ros2 action info` 为准 | 任务入口 |
+| /planner_server | Service | /compute_path_to_pose | nav2_msgs/srv/ComputePathToPose | 以 `ros2 service info` 为准 | 全局路径 |
+| /controller_server | Topic Pub | /cmd_vel | geometry_msgs/msg/Twist | 以 `ros2 topic info --verbose` 为准 | 速度指令 |
+| /controller_server | Topic Sub | /odom | nav_msgs/msg/Odometry | 以 `ros2 topic info --verbose` 为准 | 里程计 |
+| /map_server | Topic Pub | /map | nav_msgs/msg/OccupancyGrid | 以 `ros2 topic info --verbose` 为准 | 静态地图 |
+
+提示：你可以把 `ros2 node info` 与 `ros2 topic info --verbose` 的结果贴进表格，形成“你的环境的精确清单”。
+
+### 包与节点说明
+
+- `ros2_learning_task_runner`：任务编排节点 `task_runner`
+  - 读取 YAML 配置（采集点/投放点）
+  - 依次执行：导航到采集点 → 调用 pick → 导航到投放点 → 调用 place
+  - 失败策略：导航失败/抓取失败则跳过当前采集点，继续下一个
+- `ros2_learning_manipulation_stub`：抓取/放置占位服务 `manipulation_stub`
+  - 提供 `/manipulation/pick` 与 `/manipulation/place`（`std_srvs/Trigger`）
+  - 仅模拟延时与日志输出
+
+### 配置文件
+
+默认配置：`ros2_ws/src/ros2_learning_task_runner/config/task_plan.yaml`
+
+```yaml
+map_frame: map
+
+dropoff:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+
+pickups:
+  - x: 1.0
+    y: 0.0
+    yaw: 0.0
+  - x: 1.0
+    y: 1.0
+    yaw: 1.57
+```
+
+### 任务配置示例扩展
+
+更多采集点（示例 4 个点）：
+
+```yaml
+map_frame: map
+
+dropoff:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+
+pickups:
+  - x: 1.0
+    y: 0.0
+    yaw: 0.0
+  - x: 1.0
+    y: 1.0
+    yaw: 1.57
+  - x: 0.0
+    y: 1.0
+    yaw: 3.14
+  - x: -1.0
+    y: 1.0
+    yaw: -1.57
+```
+
+注意：
+- `yaw` 单位为弧度（rad）。
+- `map_frame` 必须与 Nav2 的全局坐标系一致（通常是 `map`）。
+
+### 常见坐标获取方式（RViz）
+
+推荐用 RViz 获取点位，再填到 `task_plan.yaml`：
+
+1) 使用 “2D Pose Estimate” 设定初始位姿（可观察 TF 是否正确）。
+2) 用 “2D Nav Goal” 在地图上点击目标点，观察终端/话题输出。
+3) 用命令查看当前目标（示例）：
+
+```bash
+ros2 topic echo /goal_pose --once
+```
+
+如果 `/goal_pose` 未发布（不同 Nav2 配置可能不同），可查看 Nav2 的实际 goal 话题：
+
+```bash
+ros2 topic list | rg goal
+```
+
+提示：也可以在 RViz 中打开 “Pose” 显示或 TF，读出 `map` 坐标与 yaw。
+
+### 小脚本：记录 RViz 目标点为 YAML 片段
+
+下面脚本订阅 `/goal_pose`（或自定义话题），把点位打印成 `pickups` 的 YAML 片段。  
+你可以把输出追加到 `task_plan.yaml` 的 `pickups` 下。
+
+```python
+#!/usr/bin/env python3
+import math
+
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import PoseStamped
+
+
+def yaw_from_quat(q):
+    siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+    cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+    return math.atan2(siny_cosp, cosy_cosp)
+
+
+class GoalRecorder(Node):
+    def __init__(self):
+        super().__init__("goal_recorder")
+        topic = self.declare_parameter("topic", "/goal_pose").get_parameter_value().string_value
+        self.create_subscription(PoseStamped, topic, self.on_goal, 10)
+        self.get_logger().info(f"Listening on {topic} ...")
+
+    def on_goal(self, msg):
+        yaw = yaw_from_quat(msg.pose.orientation)
+        print(f"  - x: {msg.pose.position.x:.3f}")
+        print(f"    y: {msg.pose.position.y:.3f}")
+        print(f"    yaw: {yaw:.3f}")
+        print()
+
+
+def main():
+    rclpy.init()
+    node = GoalRecorder()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+使用方式（示例）：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+python3 goal_recorder.py
+```
+
+如果你的目标话题不是 `/goal_pose`，可以这样指定：
+
+```bash
+python3 goal_recorder.py --ros-args -p topic:=/navigate_to_pose/_action/goal
+```
+
+### 启动与运行
+
+前提：Nav2 已启动（`navigate_to_pose` action 可用），并已 source 工作空间。
+
+Nav2 启动示例（以 TurtleBot3 Gazebo 为例，按你的环境替换）： 
+
+```bash
+# 终端 A：启动仿真世界
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+```bash
+# 终端 B：启动 Nav2（官方导航示例）
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
+```
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 launch ros2_learning_task_runner task_runner_sim.launch.py
+```
+
+### 推荐的三终端启动顺序
+
+1) 终端 A：启动仿真（Gazebo 世界）
+
+```bash
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+2) 终端 B：启动 Nav2（导航栈）
+
+```bash
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
+```
+
+3) 终端 C：启动任务编排（读取 YAML）
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 launch ros2_learning_task_runner task_runner_sim.launch.py
+```
+
+### 常见报错与排查
+
+- `Nav2 action server unavailable`：Nav2 没启动，或 action 名不一致（默认 `navigate_to_pose`）。
+- `TF is not available`：TF 没建立好，检查 `map -> base_link` 是否存在。
+- `use_sim_time=true, waiting for /clock...` 一直卡住：仿真没启动或 `/clock` 没发布。
+- `Task config missing dropoff or pickups`：`task_plan.yaml` 缺少 `dropoff` 或 `pickups`。
+- `Pick/Place service unavailable`：`manipulation_stub` 未启动或服务名不一致。
+
+如果想指定自己的配置文件：
+
+```bash
+ros2 launch ros2_learning_task_runner task_runner_sim.launch.py \
+  task_config:=/absolute/path/to/task_plan.yaml
+```
+
+### 话题与接口
+
+- 导航 Action：`navigate_to_pose`（Nav2 默认 Action 名）
+- 抓取/放置服务：`/manipulation/pick`、`/manipulation/place`（`std_srvs/Trigger`）
+- 剩余距离：`/distance_remaining`（`std_msgs/Float32`，`task_runner` 发布）
+
 ## VS Code 调试：步入 rclcpp 源码
 
 本仓库的 VS Code 调试配置已包含 `sourceFileMap`，用于把系统里的 `/usr/src/ros-jazzy-rclcpp-*` 映射到本仓库本地下载的源码目录。

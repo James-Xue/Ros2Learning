@@ -1,0 +1,21 @@
+map_frame: map
+
+# Dropoff pose in map frame
+# yaw in radians
+
+dropoff:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+
+# Pickup poses in map frame
+pickups:
+  - x: 1.0
+    y: 0.0
+    yaw: 0.0
+  - x: 1.0
+    y: 1.0
+    yaw: 1.57
+  - x: 0.0
+    y: 1.0
+    yaw: 3.14
