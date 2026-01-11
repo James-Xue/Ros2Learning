@@ -135,6 +135,70 @@ ros2 topic list | rg goal
 
 提示：也可以在 RViz 中打开 “Pose” 显示或 TF，读出 `map` 坐标与 yaw。
 
+### 小脚本：记录 RViz 目标点为 YAML 片段
+
+下面脚本订阅 `/goal_pose`（或自定义话题），把点位打印成 `pickups` 的 YAML 片段。  
+你可以把输出追加到 `task_plan.yaml` 的 `pickups` 下。
+
+```python
+#!/usr/bin/env python3
+import math
+
+import rclpy
+from rclpy.node import Node
+from geometry_msgs.msg import PoseStamped
+
+
+def yaw_from_quat(q):
+    siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+    cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+    return math.atan2(siny_cosp, cosy_cosp)
+
+
+class GoalRecorder(Node):
+    def __init__(self):
+        super().__init__("goal_recorder")
+        topic = self.declare_parameter("topic", "/goal_pose").get_parameter_value().string_value
+        self.create_subscription(PoseStamped, topic, self.on_goal, 10)
+        self.get_logger().info(f"Listening on {topic} ...")
+
+    def on_goal(self, msg):
+        yaw = yaw_from_quat(msg.pose.orientation)
+        print(f"  - x: {msg.pose.position.x:.3f}")
+        print(f"    y: {msg.pose.position.y:.3f}")
+        print(f"    yaw: {yaw:.3f}")
+        print()
+
+
+def main():
+    rclpy.init()
+    node = GoalRecorder()
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
+```
+
+使用方式（示例）：
+
+```bash
+source /opt/ros/jazzy/setup.bash
+python3 goal_recorder.py
+```
+
+如果你的目标话题不是 `/goal_pose`，可以这样指定：
+
+```bash
+python3 goal_recorder.py --ros-args -p topic:=/navigate_to_pose/_action/goal
+```
+
 ### 启动与运行
 
 前提：Nav2 已启动（`navigate_to_pose` action 可用），并已 source 工作空间。
