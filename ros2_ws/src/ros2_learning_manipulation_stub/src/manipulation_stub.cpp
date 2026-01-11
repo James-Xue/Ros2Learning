@@ -27,7 +27,9 @@ void ManipulationStub::handle_pick(const std::shared_ptr<Trigger::Request> reque
 {
     (void)request;
     RCLCPP_INFO(get_logger(), "Pick requested, simulating for %.1f seconds.", operation_time_sec_);
-    rclcpp::sleep_for(std::chrono::duration<double>(operation_time_sec_));
+    const auto sleep_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(operation_time_sec_));
+    rclcpp::sleep_for(sleep_duration);
     response->success = true;
     response->message = "pick ok";
 }
@@ -37,7 +39,9 @@ void ManipulationStub::handle_place(const std::shared_ptr<Trigger::Request> requ
 {
     (void)request;
     RCLCPP_INFO(get_logger(), "Place requested, simulating for %.1f seconds.", operation_time_sec_);
-    rclcpp::sleep_for(std::chrono::duration<double>(operation_time_sec_));
+    const auto sleep_duration = std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::duration<double>(operation_time_sec_));
+    rclcpp::sleep_for(sleep_duration);
     response->success = true;
     response->message = "place ok";
 }
