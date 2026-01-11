@@ -53,6 +53,60 @@ ros2 run ros2_learning_cpp listener
 目标：从配置文件读取多个采集点与一个投放点，让机器人依次导航到采集点、执行“抓取”（占位服务），再导航到投放点执行“放置”（占位服务）。  
 适用：学习任务编排/导航联动，先跑通流程，后续可替换真实机械臂接口。
 
+### 架构图（含话题/动作/服务）
+
+```mermaid
+flowchart LR
+  UI[用户/配置文件]
+  TR[task_runner]
+  NAV2[Nav2 Stack]
+  MANI[manipulation_stub]
+  SIM[Gazebo/仿真]
+
+  UI -->|task_plan.yaml| TR
+  SIM -->|/clock| TR
+
+  TR -->|Action: navigate_to_pose| NAV2
+  NAV2 -->|Feedback: distance_remaining| TR
+  TR -->|Topic: /distance_remaining| UI
+
+  TR -->|Service: /manipulation/pick| MANI
+  TR -->|Service: /manipulation/place| MANI
+
+  NAV2 -->|/cmd_vel| SIM
+  SIM -->|/odom,/tf| NAV2
+```
+
+### 节点与接口清单（话题/动作/服务）
+
+**task_runner（ros2_learning_task_runner）**
+- 订阅：无
+- 发布：
+  - `/distance_remaining`（`std_msgs/Float32`，由 Nav2 feedback 转发）
+- 调用 Action：
+  - `navigate_to_pose`（`nav2_msgs/action/NavigateToPose`）
+- 调用 Service：
+  - `/manipulation/pick`（`std_srvs/Trigger`）
+  - `/manipulation/place`（`std_srvs/Trigger`）
+- 依赖时钟：
+  - `/clock`（仿真 use_sim_time=true 时）
+
+**manipulation_stub（ros2_learning_manipulation_stub）**
+- 提供 Service：
+  - `/manipulation/pick`（`std_srvs/Trigger`）
+  - `/manipulation/place`（`std_srvs/Trigger`）
+
+**Nav2 栈（外部）**
+- 提供 Action：
+  - `navigate_to_pose`（`nav2_msgs/action/NavigateToPose`）
+- 典型话题（由 Nav2/仿真组合决定）：
+  - `/cmd_vel`、`/odom`、`/tf`、`/tf_static`
+
+**Gazebo/仿真（外部）**
+- 发布：
+  - `/clock`（仿真时间）
+  - `/odom`、`/tf`（机器人状态）
+
 ### 包与节点说明
 
 - `ros2_learning_task_runner`：任务编排节点 `task_runner`
