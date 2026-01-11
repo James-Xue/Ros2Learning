@@ -115,6 +115,26 @@ pickups:
 - `yaw` 单位为弧度（rad）。
 - `map_frame` 必须与 Nav2 的全局坐标系一致（通常是 `map`）。
 
+### 常见坐标获取方式（RViz）
+
+推荐用 RViz 获取点位，再填到 `task_plan.yaml`：
+
+1) 使用 “2D Pose Estimate” 设定初始位姿（可观察 TF 是否正确）。
+2) 用 “2D Nav Goal” 在地图上点击目标点，观察终端/话题输出。
+3) 用命令查看当前目标（示例）：
+
+```bash
+ros2 topic echo /goal_pose --once
+```
+
+如果 `/goal_pose` 未发布（不同 Nav2 配置可能不同），可查看 Nav2 的实际 goal 话题：
+
+```bash
+ros2 topic list | rg goal
+```
+
+提示：也可以在 RViz 中打开 “Pose” 显示或 TF，读出 `map` 坐标与 yaw。
+
 ### 启动与运行
 
 前提：Nav2 已启动（`navigate_to_pose` action 可用），并已 source 工作空间。
