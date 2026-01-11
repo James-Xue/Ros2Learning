@@ -30,7 +30,16 @@ Nav2Client::Nav2Client()
     clock_wait_timeout_sec_ = this->declare_parameter<double>("clock_wait_timeout_sec", 20.0);
     // 默认 true：本仓库的 nav2_client 主要用于 Gazebo/Nav2 仿真栈，若不启用 sim time，
     // 发送 initialpose/goal 时的时间戳会是系统时间，可能导致 Nav2 侧判定异常并 ABORT。
-    use_sim_time_ = this->declare_parameter<bool>("use_sim_time", true);
+    // 注意：rclcpp 可能会在内部自动声明 use_sim_time（TimeSource）。
+    // 因此这里要避免重复 declare 导致: "parameter 'use_sim_time' has already been declared"。
+    if (!this->has_parameter("use_sim_time"))
+    {
+        use_sim_time_ = this->declare_parameter<bool>("use_sim_time", true);
+    }
+    else
+    {
+        this->get_parameter("use_sim_time", use_sim_time_);
+    }
 
     // 创建一个发布器，用于发布初始位姿到 /initialpose 话题，队列深度为 10
     mInitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
