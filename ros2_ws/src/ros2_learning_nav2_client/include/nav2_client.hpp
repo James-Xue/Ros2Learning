@@ -47,7 +47,7 @@ class Nav2Client : public rclcpp::Node
     // 等待 Nav2 action server 可用，返回 true/false
     bool wait_for_server();
     // 等待时间（use_sim_time 场景中等待时钟非 0）
-    void wait_for_time();
+    bool wait_for_time();
     // 等待 TF（如 map -> base_link）可用，成功返回 true
     bool wait_for_tf();
     // 发布初始位姿到 /initialpose（带协方差）
@@ -71,5 +71,6 @@ class Nav2Client : public rclcpp::Node
     double goal_y_{0.0};
     double goal_yaw_{0.0};
     double tf_wait_timeout_sec_{10.0};
+    double clock_wait_timeout_sec_{20.0};
     bool use_sim_time_{false};
 };

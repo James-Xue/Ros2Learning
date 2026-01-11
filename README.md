@@ -77,6 +77,13 @@ ros2 run ros2_learning_cpp listener
 补充：如果你希望“停在 talker 自己的入口”而不是先停在 `bash`，可以用调试配置 `ROS2: Debug talker (Direct envFile, stop at entry)`。
 它会先执行 Task `ROS2: Export env (jazzy)` 导出一份已 source 的 ROS2 环境到 `.vscode/ros2_jazzy.env`，然后直接启动节点二进制，更适合研究 `_start -> __libc_start_main -> main` 这条链路。
 
+重要：`/opt/ros/${ROS_DISTRO}` 下的很多库（包括 `librclcpp.so`）默认是 **stripped**，没有源码级调试信息。
+如果你想真正单步进入 `rclcpp::init` 并看到 `.cpp` 源码，需要安装对应的 dbgsym 包：
+
+```bash
+./ros2_ws/scripts/setup_ros2_dbgsym.sh jazzy
+```
+
 ## 新手最快仿真（TurtleBot3 官方示例）
 
 > 说明：当前仓库尚未内置完整仿真包。想“立刻让小车动起来”，推荐先用官方示例验证环境与手感，再回到本仓库按规划补齐包。

@@ -227,7 +227,7 @@
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
             },
-            "preLaunchTask": "ROS2: Prepare nav2 debug (jazzy)",
+            "preLaunchTask": "ROS2: Prepare debug (jazzy)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing",
@@ -284,7 +284,7 @@
                 "./csu/../sysdeps": "${workspaceFolder}/third_party/glibc/sysdeps",
                 "./csu/../csu": "${workspaceFolder}/third_party/glibc/csu"
             },
-            "preLaunchTask": "ROS2: Prepare nav2 debug (jazzy)",
+            "preLaunchTask": "ROS2: Prepare debug (jazzy)",
             "setupCommands": [
                 {
                     "description": "Enable pretty-printing",

@@ -8,6 +8,8 @@
 // 引入 TF2 的 TransformListener，用于订阅并把变换写入 Buffer
 #include <tf2_ros/transform_listener.h>
 
+#include <chrono>
+
 // 使用 std::chrono 的字面量（如 100ms, 1s 等）方便写时长常量
 using namespace std::chrono_literals;
 
@@ -25,7 +27,10 @@ Nav2Client::Nav2Client()
     goal_y_ = this->declare_parameter<double>("goal_y", 0.0);
     goal_yaw_ = this->declare_parameter<double>("goal_yaw", 0.0);
     tf_wait_timeout_sec_ = this->declare_parameter<double>("tf_wait_timeout_sec", 10.0);
-    use_sim_time_ = this->declare_parameter<bool>("use_sim_time", false);
+    clock_wait_timeout_sec_ = this->declare_parameter<double>("clock_wait_timeout_sec", 20.0);
+    // 默认 true：本仓库的 nav2_client 主要用于 Gazebo/Nav2 仿真栈，若不启用 sim time，
+    // 发送 initialpose/goal 时的时间戳会是系统时间，可能导致 Nav2 侧判定异常并 ABORT。
+    use_sim_time_ = this->declare_parameter<bool>("use_sim_time", true);
 
     // 创建一个发布器，用于发布初始位姿到 /initialpose 话题，队列深度为 10
     mInitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
@@ -40,7 +45,15 @@ void Nav2Client::run()
     if (use_sim_time_)
     {
         RCLCPP_INFO(get_logger(), "use_sim_time=true, waiting for /clock...");
-        wait_for_time();
+        const bool clock_ok = wait_for_time();
+        if (!clock_ok)
+        {
+            RCLCPP_ERROR(get_logger(),
+                         "/clock not received within %.1f seconds. "
+                         "Start the simulation/Nav2 stack first, or run with -p use_sim_time:=false.",
+                         clock_wait_timeout_sec_);
+            return;
+        }
     }
 
     // 等待 Nav2 的 action server 可用，如果不可用则报错并返回
@@ -81,24 +94,28 @@ void Nav2Client::run()
         // 获取封装的结果对象
         const auto wrapped_result = result_future.get();
         const auto action_result_code = wrapped_result.code;
+        const auto result = wrapped_result.result;
+        const auto error_code = result ? result->error_code : 0;
+        const auto error_msg = (result && !result->error_msg.empty()) ? result->error_msg.c_str() : "";
         // 根据 action 返回的 code 进行不同日志输出
         switch (action_result_code)
         {
         case rclcpp_action::ResultCode::SUCCEEDED:
             // 导航成功
-            RCLCPP_INFO(get_logger(), "Navigation succeeded.");
+            RCLCPP_INFO(get_logger(), "Navigation succeeded. error_code=%u error_msg='%s'", error_code, error_msg);
             break;
         case rclcpp_action::ResultCode::ABORTED:
             // 导航被中止
-            RCLCPP_WARN(get_logger(), "Navigation aborted.");
+            RCLCPP_WARN(get_logger(), "Navigation aborted. error_code=%u error_msg='%s'", error_code, error_msg);
             break;
         case rclcpp_action::ResultCode::CANCELED:
             // 导航被取消
-            RCLCPP_WARN(get_logger(), "Navigation canceled.");
+            RCLCPP_WARN(get_logger(), "Navigation canceled. error_code=%u error_msg='%s'", error_code, error_msg);
             break;
         default:
             // 未知结果码
-            RCLCPP_WARN(get_logger(), "Unknown result code.");
+            RCLCPP_WARN(get_logger(), "Unknown result code. code=%d error_code=%u error_msg='%s'",
+                        static_cast<int>(action_result_code), error_code, error_msg);
             break;
         }
     }
@@ -163,22 +180,29 @@ bool Nav2Client::wait_for_server()
 }
 
 // 在仿真或使用 /use_sim_time 时，等待时间被发布（即时钟非 0）
-void Nav2Client::wait_for_time()
+bool Nav2Client::wait_for_time()
 {
     // 说明：在仿真（use_sim_time=true）场景，若 /clock 尚未发布，ROS 时间会一直是 0。
     // 这里阻塞等待直到时间变为非 0；如果进程收到退出信号（rclcpp::ok()==false），则提前返回。
+    const auto start_wall = std::chrono::steady_clock::now();
     while (true)
     {
         const bool is_ok = rclcpp::ok();
         if (false == is_ok)
         {
-            return;
+            return false;
         }
 
         const rcl_duration_value_t now_ns = this->get_clock()->now().nanoseconds();
         if (0 != now_ns)
         {
-            return;
+            return true;
+        }
+
+        const auto elapsed = std::chrono::steady_clock::now() - start_wall;
+        if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > clock_wait_timeout_sec_)
+        {
+            return false;
         }
 
         // 休眠避免空转占满 CPU

@@ -12,13 +12,23 @@ int main(int argc, char **argv)
     // 初始化 rclcpp，必须在任何 ROS 2 API 调用前执行，传入命令行参数
     rclcpp::init(argc, argv);
 
-    // 使用智能指针创建 Nav2Client 节点实例（在构造函数中会创建 publisher 与 action client）
-    auto node = std::make_shared<Nav2Client>();
+    try
+    {
+        // 使用智能指针创建 Nav2Client 节点实例（在构造函数中会创建 publisher 与 action client）
+        auto node = std::make_shared<Nav2Client>();
 
-    // 调用节点的运行入口函数，内部会执行等待时间、发布初始位姿、等待 TF、发送目标并等待结果
-    node->run();
+        // 调用节点的运行入口函数，内部会执行等待时间、发布初始位姿、等待 TF、发送目标并等待结果
+        node->run();
 
-    // 清理并关闭 rclcpp，释放资源
-    rclcpp::shutdown();
-    return 0;
+        // 清理并关闭 rclcpp，释放资源
+        rclcpp::shutdown();
+        return 0;
+    }
+    catch (const std::exception &e)
+    {
+        // 避免异常未捕获导致进程直接 SIGABRT（表现为 "Aborted"）
+        fprintf(stderr, "[nav2_client] FATAL: exception: %s\n", e.what());
+        rclcpp::shutdown();
+        return 2;
+    }
 }
