@@ -206,14 +206,12 @@
             "name": "ROS2: Debug nav2_client (Debug build)",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/usr/bin/bash",
-            "args": [
-                "-lc",
-                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && exec '${workspaceFolder}/ros2_ws/install/ros2_learning_nav2_client/lib/ros2_learning_nav2_client/nav2_client'"
-            ],
+            "program": "${workspaceFolder}/ros2_ws/install/ros2_learning_nav2_client/lib/ros2_learning_nav2_client/nav2_client",
+            "args": [],
             "MIMode": "gdb",
             "miDebuggerPath": "/usr/bin/gdb",
             "cwd": "${workspaceFolder}/ros2_ws",
+            "envFile": "${workspaceFolder}/.vscode/ros2_jazzy.env",
             "externalConsole": false,
             "justMyCode": false,
             "stopAtEntry": true,
