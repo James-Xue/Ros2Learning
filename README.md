@@ -88,6 +88,20 @@ pickups:
 
 前提：Nav2 已启动（`navigate_to_pose` action 可用），并已 source 工作空间。
 
+Nav2 启动示例（以 TurtleBot3 Gazebo 为例，按你的环境替换）： 
+
+```bash
+# 终端 A：启动仿真世界
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+```bash
+# 终端 B：启动 Nav2（官方导航示例）
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
+```
+
 ```bash
 cd Ros2Learning/ros2_ws
 source ./scripts/source.sh jazzy
