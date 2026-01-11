@@ -162,6 +162,16 @@ ros2 run ros2_learning_nav2_client nav2_client --ros-args \
  tf_wait_timeout_sec：等待 TF 的超时秒数
  use_sim_time：是否使用仿真时间（true 时等待 /clock）
 
+抓取/放置占位服务（ros2_learning_manipulation_stub）
+
+用于学习任务编排时模拟抓取/放置流程，提供两个 Trigger 服务：
+
+text '''
+ros2 launch ros2_learning_manipulation_stub manipulation_stub.launch.py use_sim_time:=true
+'''
+
+服务名称：/manipulation/pick、/manipulation/place
+
 7. 里程碑 1 验收标准
 
 当前阶段完成情况以工程可复现性与系统稳定性为准：

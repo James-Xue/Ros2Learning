@@ -1,5 +1,6 @@
 #pragma once
 
+// 任务编排节点定义：读取配置并串行执行导航与抓取/放置
 #include <string>
 #include <vector>
 
@@ -14,16 +15,19 @@
 class TaskRunner : public rclcpp::Node
 {
   public:
+    // 常用类型别名
     using NavigateToPose = nav2_msgs::action::NavigateToPose;
     using GoalHandle = rclcpp_action::ClientGoalHandle<NavigateToPose>;
     using PoseStamped = geometry_msgs::msg::PoseStamped;
     using Trigger = std_srvs::srv::Trigger;
 
+    // 构造与主入口
     TaskRunner();
 
     void run();
 
   private:
+    // 简化的 2D 位姿结构
     struct Pose2D
     {
         double x{0.0};
@@ -31,17 +35,21 @@ class TaskRunner : public rclcpp::Node
         double yaw{0.0};
     };
 
+    // 配置加载与解析
     bool load_task_config(const std::string &path);
     bool parse_pose_node(const YAML::Node &node, const std::string &label, Pose2D *out_pose);
 
+    // 启动等待
     bool wait_for_time();
     bool wait_for_action_server();
     bool wait_for_service(const rclcpp::Client<Trigger>::SharedPtr &client, const std::string &name);
 
+    // 动作封装
     PoseStamped make_pose(const Pose2D &pose) const;
     bool navigate_to(const Pose2D &pose, const std::string &label);
     bool call_trigger(const rclcpp::Client<Trigger>::SharedPtr &client, const std::string &name);
 
+    // 参数与配置
     std::string map_frame_;
     std::string nav2_action_name_;
     std::string task_config_path_;
@@ -51,10 +59,12 @@ class TaskRunner : public rclcpp::Node
     double navigation_timeout_sec_{120.0};
     bool use_sim_time_{true};
 
+    // 任务点数据
     Pose2D dropoff_;
     bool has_dropoff_{false};
     std::vector<Pose2D> pickup_points_;
 
+    // ROS 通信句柄
     rclcpp_action::Client<NavigateToPose>::SharedPtr action_client_;
     rclcpp::Client<Trigger>::SharedPtr pick_client_;
     rclcpp::Client<Trigger>::SharedPtr place_client_;
