@@ -108,6 +108,38 @@ source ./scripts/source.sh jazzy
 ros2 launch ros2_learning_task_runner task_runner_sim.launch.py
 ```
 
+### 推荐的三终端启动顺序
+
+1) 终端 A：启动仿真（Gazebo 世界）
+
+```bash
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+2) 终端 B：启动 Nav2（导航栈）
+
+```bash
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_navigation2 navigation2.launch.py use_sim_time:=true
+```
+
+3) 终端 C：启动任务编排（读取 YAML）
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 launch ros2_learning_task_runner task_runner_sim.launch.py
+```
+
+### 常见报错与排查
+
+- `Nav2 action server unavailable`：Nav2 没启动，或 action 名不一致（默认 `navigate_to_pose`）。
+- `TF is not available`：TF 没建立好，检查 `map -> base_link` 是否存在。
+- `use_sim_time=true, waiting for /clock...` 一直卡住：仿真没启动或 `/clock` 没发布。
+- `Task config missing dropoff or pickups`：`task_plan.yaml` 缺少 `dropoff` 或 `pickups`。
+- `Pick/Place service unavailable`：`manipulation_stub` 未启动或服务名不一致。
+
 如果想指定自己的配置文件：
 
 ```bash
