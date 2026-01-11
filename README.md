@@ -156,6 +156,46 @@ flowchart LR
 - `nav2_params.yaml`：Nav2 参数主文件
 - `bt_navigator.xml`：行为树描述文件
 
+### 接口明细与 QoS 核对（推荐做法）
+
+不同发行版/参数/插件会改变接口细节，下面是“现场核对”的最可靠方式：
+
+```bash
+# 查看节点与接口
+ros2 node list
+ros2 action list -t
+ros2 service list -t
+ros2 topic list -t
+
+# 查看具体节点的接口（含订阅/发布/服务/动作）
+ros2 node info /bt_navigator
+ros2 node info /controller_server
+ros2 node info /planner_server
+
+# 查看话题 QoS（精确输出）
+ros2 topic info /cmd_vel --verbose
+ros2 topic info /odom --verbose
+ros2 topic info /tf --verbose
+ros2 topic info /tf_static --verbose
+
+# 查看节点参数（精确输出）
+ros2 param list /controller_server
+ros2 param list /planner_server
+ros2 param list /bt_navigator
+```
+
+### Nav2 接口明细表（模板，建议按实际输出填充）
+
+| 节点 | 接口类型 | 名称 | 类型 | QoS | 说明 |
+| --- | --- | --- | --- | --- | --- |
+| /bt_navigator | Action Server | navigate_to_pose | nav2_msgs/action/NavigateToPose | 以 `ros2 action info` 为准 | 任务入口 |
+| /planner_server | Service | /compute_path_to_pose | nav2_msgs/srv/ComputePathToPose | 以 `ros2 service info` 为准 | 全局路径 |
+| /controller_server | Topic Pub | /cmd_vel | geometry_msgs/msg/Twist | 以 `ros2 topic info --verbose` 为准 | 速度指令 |
+| /controller_server | Topic Sub | /odom | nav_msgs/msg/Odometry | 以 `ros2 topic info --verbose` 为准 | 里程计 |
+| /map_server | Topic Pub | /map | nav_msgs/msg/OccupancyGrid | 以 `ros2 topic info --verbose` 为准 | 静态地图 |
+
+提示：你可以把 `ros2 node info` 与 `ros2 topic info --verbose` 的结果贴进表格，形成“你的环境的精确清单”。
+
 ### 包与节点说明
 
 - `ros2_learning_task_runner`：任务编排节点 `task_runner`
