@@ -84,6 +84,37 @@ pickups:
     yaw: 1.57
 ```
 
+### 任务配置示例扩展
+
+更多采集点（示例 4 个点）：
+
+```yaml
+map_frame: map
+
+dropoff:
+  x: 0.0
+  y: 0.0
+  yaw: 0.0
+
+pickups:
+  - x: 1.0
+    y: 0.0
+    yaw: 0.0
+  - x: 1.0
+    y: 1.0
+    yaw: 1.57
+  - x: 0.0
+    y: 1.0
+    yaw: 3.14
+  - x: -1.0
+    y: 1.0
+    yaw: -1.57
+```
+
+注意：
+- `yaw` 单位为弧度（rad）。
+- `map_frame` 必须与 Nav2 的全局坐标系一致（通常是 `map`）。
+
 ### 启动与运行
 
 前提：Nav2 已启动（`navigate_to_pose` action 可用），并已 source 工作空间。
