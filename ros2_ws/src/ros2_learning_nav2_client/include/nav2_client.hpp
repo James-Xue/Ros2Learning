@@ -56,10 +56,10 @@ class Nav2Client : public rclcpp::Node
     GoalHandle::SharedPtr send_goal();
 
     // 成员变量说明：
-    // mInitialPosePublisher: 发布 /initialpose 的发布器，类型为 PoseWithCovarianceStamped
-    PosePublisher::SharedPtr mInitialPosePublisher;
-    // mActionClient: 与 Nav2 的 NavigateToPose action 交互的客户端
-    NavigateClient::SharedPtr mActionClient;
+    // m_InitialPosePublisher: 发布 /initialpose 的发布器，类型为 PoseWithCovarianceStamped
+    PosePublisher::SharedPtr m_InitialPosePublisher;
+    // m_ActionClient: 与 Nav2 的 NavigateToPose action 交互的客户端
+    NavigateClient::SharedPtr m_ActionClient;
 
     // 参数化配置：坐标系与初始/目标位姿
     std::string map_frame_;

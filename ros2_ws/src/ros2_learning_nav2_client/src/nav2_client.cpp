@@ -42,9 +42,9 @@ Nav2Client::Nav2Client()
     }
 
     // 创建一个发布器，用于发布初始位姿到 /initialpose 话题，队列深度为 10
-    mInitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
+    m_InitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
     // 创建一个 action 客户端，用来与 Nav2 的 navigate_to_pose action 通信
-    mActionClient = rclcpp_action::create_client<NavigateToPose>(this, "navigate_to_pose");
+    m_ActionClient = rclcpp_action::create_client<NavigateToPose>(this, "navigate_to_pose");
 }
 
 // 入口运行函数：负责等待时间、等待 action server、发布初始位姿、发送目标并等待结果
@@ -93,7 +93,7 @@ void Nav2Client::run()
     }
 
     // 异步获取结果的 future
-    auto result_future = mActionClient->async_get_result(goal_handle);
+    auto result_future = m_ActionClient->async_get_result(goal_handle);
     // 等待结果，最长等待 60 秒
     const auto result_code = rclcpp::spin_until_future_complete(shared_from_this(), result_future, 60s);
 
@@ -132,7 +132,7 @@ void Nav2Client::run()
     {
         // 如果等待超时或 future 未成功返回，则尝试取消目标
         RCLCPP_WARN(get_logger(), "Navigation timeout, canceling goal.");
-        auto cancel_future = mActionClient->async_cancel_goal(goal_handle);
+        auto cancel_future = m_ActionClient->async_cancel_goal(goal_handle);
         // 等待取消操作完成，最长等待 5 秒
         const auto cancel_code = rclcpp::spin_until_future_complete(shared_from_this(), cancel_future, 5s);
         (void)cancel_code;
@@ -184,7 +184,7 @@ bool Nav2Client::wait_for_server()
 {
     RCLCPP_INFO(get_logger(), "Waiting for Nav2 action server...");
     // 等待 action server 最多 10 秒，返回是否可用
-    const bool is_ready = mActionClient->wait_for_action_server(10s);
+    const bool is_ready = m_ActionClient->wait_for_action_server(10s);
     return is_ready;
 }
 
@@ -250,7 +250,7 @@ void Nav2Client::publish_initial_pose()
     {
         // 更新时间戳并发布消息
         msg.header.stamp = this->now();
-        mInitialPosePublisher->publish(msg);
+        m_InitialPosePublisher->publish(msg);
         rclcpp::sleep_for(200ms);
     }
 }
@@ -283,7 +283,7 @@ Nav2Client::GoalHandle::SharedPtr Nav2Client::send_goal()
     { RCLCPP_INFO(get_logger(), "Remaining distance: %.2f", feedback->distance_remaining); };
 
     // 异步发送目标，返回一个 future（用于拿到 goal handle）
-    auto goal_handle_future = mActionClient->async_send_goal(goal_msg, send_goal_options);
+    auto goal_handle_future = m_ActionClient->async_send_goal(goal_msg, send_goal_options);
 
     // 等待发送 goal 的 future 完成，超时时间为 5 秒；如果失败则返回 nullptr
     const auto send_goal_code = rclcpp::spin_until_future_complete(shared_from_this(), goal_handle_future, 5s);
