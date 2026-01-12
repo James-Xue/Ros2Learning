@@ -13,6 +13,8 @@
 #include "task_runner.hpp"
 
 #include <tf2/LinearMath/Quaternion.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
 #include <chrono>
@@ -26,6 +28,7 @@ TaskRunner::TaskRunner()
 {
     // 基础参数：地图坐标系、Nav2 action 名称、任务配置路径
     map_frame_ = this->declare_parameter<std::string>("map_frame", "map");
+    base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
     nav2_action_name_ = this->declare_parameter<std::string>("nav2_action_name", "navigate_to_pose");
     task_config_path_ = this->declare_parameter<std::string>("task_config", "");
     // 抓取/放置服务名称
@@ -33,9 +36,22 @@ TaskRunner::TaskRunner()
     place_service_name_ = this->declare_parameter<std::string>("place_service", "/manipulation/place");
     // 超时参数：等待 /clock、单次导航超时
     clock_wait_timeout_sec_ = this->declare_parameter<double>("clock_wait_timeout_sec", 20.0);
+    tf_wait_timeout_sec_ = this->declare_parameter<double>("tf_wait_timeout_sec", 10.0);
     navigation_timeout_sec_ = this->declare_parameter<double>("navigation_timeout_sec", 120.0);
-    // 是否使用仿真时间
-    use_sim_time_ = this->declare_parameter<bool>("use_sim_time", true);
+    // 初始位姿（可选）
+    initial_x_ = this->declare_parameter<double>("initial_x", 0.0);
+    initial_y_ = this->declare_parameter<double>("initial_y", 0.0);
+    initial_yaw_ = this->declare_parameter<double>("initial_yaw", 0.0);
+    publish_initial_pose_ = this->declare_parameter<bool>("publish_initial_pose", false);
+    // 是否使用仿真时间（rclcpp 会提前声明 use_sim_time，避免重复声明）
+    if (this->has_parameter("use_sim_time"))
+    {
+        this->get_parameter("use_sim_time", use_sim_time_);
+    }
+    else
+    {
+        use_sim_time_ = this->declare_parameter<bool>("use_sim_time", true);
+    }
 
     // Nav2 导航 Action 客户端
     action_client_ = rclcpp_action::create_client<NavigateToPose>(this, nav2_action_name_);
@@ -45,6 +61,8 @@ TaskRunner::TaskRunner()
 
     // 发布剩余距离（由 Nav2 feedback 提供）
     distance_pub_ = this->create_publisher<std_msgs::msg::Float32>("distance_remaining", 10);
+    // 发布初始位姿到 /initialpose（可选）
+    initial_pose_pub_ = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
 }
 
 // 主流程：等待环境 -> 读取配置 -> 依次执行 pickup -> dropoff
@@ -72,6 +90,17 @@ void TaskRunner::run()
     if (!wait_for_action_server())
     {
         RCLCPP_ERROR(get_logger(), "Nav2 action server unavailable.");
+        return;
+    }
+
+    if (publish_initial_pose_)
+    {
+        publish_initial_pose();
+    }
+
+    if (!wait_for_tf())
+    {
+        RCLCPP_ERROR(get_logger(), "TF %s -> %s unavailable.", map_frame_.c_str(), base_frame_.c_str());
         return;
     }
 
@@ -236,6 +265,38 @@ bool TaskRunner::wait_for_time()
     return false;
 }
 
+bool TaskRunner::wait_for_tf()
+{
+    tf2_ros::Buffer tf_buffer(this->get_clock());
+    tf2_ros::TransformListener tf_listener(tf_buffer);
+
+    RCLCPP_INFO(get_logger(), "Waiting for TF %s -> %s...", map_frame_.c_str(), base_frame_.c_str());
+    const auto start_time = this->now();
+    while (rclcpp::ok())
+    {
+        try
+        {
+            const auto transform_stamped = tf_buffer.lookupTransform(map_frame_, base_frame_, tf2::TimePointZero);
+            (void)transform_stamped;
+            RCLCPP_INFO(get_logger(), "TF %s -> %s is available.", map_frame_.c_str(), base_frame_.c_str());
+            return true;
+        }
+        catch (const tf2::TransformException &ex)
+        {
+            RCLCPP_DEBUG(get_logger(), "TF lookup failed: %s", ex.what());
+            rclcpp::sleep_for(200ms);
+        }
+
+        if ((this->now() - start_time).seconds() > tf_wait_timeout_sec_)
+        {
+            RCLCPP_ERROR(get_logger(), "TF wait timeout after %.1f seconds.", tf_wait_timeout_sec_);
+            return false;
+        }
+    }
+
+    return false;
+}
+
 bool TaskRunner::wait_for_action_server()
 {
     // 等待 Nav2 action server 可用
@@ -266,6 +327,31 @@ TaskRunner::PoseStamped TaskRunner::make_pose(const Pose2D &pose) const
     msg.pose.orientation = tf2::toMsg(q);
 
     return msg;
+}
+
+void TaskRunner::publish_initial_pose()
+{
+    PoseWithCovarianceStamped msg;
+    msg.header.frame_id = map_frame_;
+    msg.header.stamp = this->now();
+    msg.pose.pose.position.x = initial_x_;
+    msg.pose.pose.position.y = initial_y_;
+
+    tf2::Quaternion q;
+    q.setRPY(0.0, 0.0, initial_yaw_);
+    msg.pose.pose.orientation = tf2::toMsg(q);
+
+    msg.pose.covariance[0] = 0.25;
+    msg.pose.covariance[7] = 0.25;
+    msg.pose.covariance[35] = 0.25;
+
+    RCLCPP_INFO(get_logger(), "Publishing initial pose to /initialpose");
+    for (int i = 0; rclcpp::ok() && i < 5; ++i)
+    {
+        msg.header.stamp = this->now();
+        initial_pose_pub_->publish(msg);
+        rclcpp::sleep_for(200ms);
+    }
 }
 
 bool TaskRunner::navigate_to(const Pose2D &pose, const std::string &label)
