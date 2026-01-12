@@ -52,6 +52,15 @@ class Nav2Client : public rclcpp::Node
     bool wait_for_server();
     // 等待 Nav2 lifecycle manager 报告栈已 active（避免过早发 goal 被拒）
     bool wait_for_nav2_active();
+
+    bool is_lifecycle_active(uint8_t state_id) const;
+    bool is_lifecycle_inactive(uint8_t state_id) const;
+    void log_nav2_state_throttled(uint8_t state_id, const std::string &state_label,
+                                  std::chrono::steady_clock::time_point &last_log) const;
+    std::string get_change_state_service_from_get_state_service() const;
+    bool try_lifecycle_manager_startup();
+    bool try_activate_lifecycle_node();
+    void ensure_nav2_active_best_effort();
     // 等待时间（use_sim_time 场景中等待时钟非 0）
     bool wait_for_time();
     // 等待 TF（如 map -> base_link）可用，成功返回 true

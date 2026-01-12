@@ -227,6 +227,116 @@ void Nav2Client::spin_some_for(std::chrono::nanoseconds duration)
     }
 }
 
+bool Nav2Client::is_lifecycle_active(uint8_t state_id) const
+{
+    return state_id == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
+}
+
+bool Nav2Client::is_lifecycle_inactive(uint8_t state_id) const
+{
+    return state_id == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE;
+}
+
+void Nav2Client::log_nav2_state_throttled(uint8_t state_id, const std::string &state_label,
+                                          std::chrono::steady_clock::time_point &last_log) const
+{
+    const auto now = std::chrono::steady_clock::now();
+    if (now - last_log < 1s)
+    {
+        return;
+    }
+
+    RCLCPP_INFO(get_logger(), "Nav2 state: id=%u label='%s' (%s)", state_id, state_label.c_str(),
+                lifecycle_get_state_service_.c_str());
+    last_log = now;
+}
+
+std::string Nav2Client::get_change_state_service_from_get_state_service() const
+{
+    std::string change_state_service = "/bt_navigator/change_state";
+
+    const std::string suffix = "/get_state";
+    if (lifecycle_get_state_service_.size() > suffix.size() &&
+        lifecycle_get_state_service_.compare(lifecycle_get_state_service_.size() - suffix.size(), suffix.size(),
+                                             suffix) == 0)
+    {
+        const std::string node_name =
+            lifecycle_get_state_service_.substr(0, lifecycle_get_state_service_.size() - suffix.size());
+        change_state_service = node_name + "/change_state";
+    }
+
+    return change_state_service;
+}
+
+bool Nav2Client::try_lifecycle_manager_startup()
+{
+    if (!m_ManageNodesClient)
+    {
+        return false;
+    }
+
+    if (!m_ManageNodesClient->wait_for_service(1s))
+    {
+        RCLCPP_WARN(get_logger(), "Lifecycle manager service not available: %s",
+                    lifecycle_manage_nodes_service_.c_str());
+        return false;
+    }
+
+    auto req = std::make_shared<nav2_msgs::srv::ManageLifecycleNodes::Request>();
+    req->command = nav2_msgs::srv::ManageLifecycleNodes::Request::STARTUP;
+    auto fut = m_ManageNodesClient->async_send_request(req);
+    const auto rc = rclcpp::spin_until_future_complete(shared_from_this(), fut, 5s);
+    if (rc != rclcpp::FutureReturnCode::SUCCESS)
+    {
+        RCLCPP_WARN(get_logger(), "Failed to call lifecycle manager STARTUP (%s)",
+                    lifecycle_manage_nodes_service_.c_str());
+        return false;
+    }
+
+    const auto resp = fut.get();
+    const bool ok = resp && resp->success;
+    RCLCPP_WARN(get_logger(), "Sent STARTUP to lifecycle manager (%s): success=%s",
+                lifecycle_manage_nodes_service_.c_str(), ok ? "true" : "false");
+    return ok;
+}
+
+bool Nav2Client::try_activate_lifecycle_node()
+{
+    const std::string change_state_service = get_change_state_service_from_get_state_service();
+
+    auto client = this->create_client<lifecycle_msgs::srv::ChangeState>(change_state_service);
+    if (!client->wait_for_service(1s))
+    {
+        RCLCPP_WARN(get_logger(), "Lifecycle change_state service not available: %s", change_state_service.c_str());
+        return false;
+    }
+
+    auto req = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+    req->transition.id = lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
+    auto fut = client->async_send_request(req);
+    const auto rc = rclcpp::spin_until_future_complete(shared_from_this(), fut, 5s);
+    if (rc != rclcpp::FutureReturnCode::SUCCESS)
+    {
+        RCLCPP_WARN(get_logger(), "Direct ACTIVATE call did not complete (%s)", change_state_service.c_str());
+        return false;
+    }
+
+    const auto resp = fut.get();
+    const bool ok = resp && resp->success;
+    RCLCPP_WARN(get_logger(), "Tried direct ACTIVATE (%s): success=%s", change_state_service.c_str(),
+                ok ? "true" : "false");
+    return ok;
+}
+
+void Nav2Client::ensure_nav2_active_best_effort()
+{
+    const bool startup_ok = try_lifecycle_manager_startup();
+    if (!startup_ok)
+    {
+        (void)try_activate_lifecycle_node();
+    }
+}
+
 bool Nav2Client::wait_for_nav2_active()
 {
     if (!m_GetStateClient)
@@ -255,96 +365,20 @@ bool Nav2Client::wait_for_nav2_active()
             const auto resp = future.get();
             if (resp)
             {
-                const auto now = std::chrono::steady_clock::now();
-                if (now - last_log >= 1s)
-                {
-                    RCLCPP_INFO(get_logger(), "Nav2 state: id=%u label='%s' (%s)", resp->current_state.id,
-                                resp->current_state.label.c_str(), lifecycle_get_state_service_.c_str());
-                    last_log = now;
-                }
+                log_nav2_state_throttled(resp->current_state.id, resp->current_state.label, last_log);
 
-                if (resp->current_state.id == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+                if (is_lifecycle_active(resp->current_state.id))
                 {
                     RCLCPP_INFO(get_logger(), "Nav2 lifecycle node is ACTIVE (%s)",
                                 lifecycle_get_state_service_.c_str());
                     return true;
                 }
 
-                // If it's inactive, optionally try to startup the stack via lifecycle manager.
-                if (!startup_sent && auto_startup_nav2_ &&
-                    resp->current_state.id == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+                // If it's inactive, optionally try to startup/activate once.
+                if (!startup_sent && auto_startup_nav2_ && is_lifecycle_inactive(resp->current_state.id))
                 {
-                    auto try_activate_directly = [this]() -> void
-                    {
-                        std::string change_state_service = "/bt_navigator/change_state";
-                        const std::string suffix = "/get_state";
-                        if (lifecycle_get_state_service_.size() > suffix.size() &&
-                            lifecycle_get_state_service_.compare(lifecycle_get_state_service_.size() - suffix.size(),
-                                                                 suffix.size(), suffix) == 0)
-                        {
-                            const std::string node_name = lifecycle_get_state_service_.substr(
-                                0, lifecycle_get_state_service_.size() - suffix.size());
-                            change_state_service = node_name + "/change_state";
-                        }
-
-                        auto client = this->create_client<lifecycle_msgs::srv::ChangeState>(change_state_service);
-                        if (!client->wait_for_service(1s))
-                        {
-                            RCLCPP_WARN(this->get_logger(), "Lifecycle change_state service not available: %s",
-                                        change_state_service.c_str());
-                            return;
-                        }
-
-                        auto req3 = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
-                        req3->transition.id = lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
-                        auto fut3 = client->async_send_request(req3);
-                        const auto rc3 = rclcpp::spin_until_future_complete(this->shared_from_this(), fut3, 5s);
-                        if (rc3 == rclcpp::FutureReturnCode::SUCCESS)
-                        {
-                            const auto resp3 = fut3.get();
-                            const bool ok = resp3 && resp3->success;
-                            RCLCPP_WARN(this->get_logger(), "Tried direct ACTIVATE (%s): success=%s",
-                                        change_state_service.c_str(), ok ? "true" : "false");
-                        }
-                        else
-                        {
-                            RCLCPP_WARN(this->get_logger(), "Direct ACTIVATE call did not complete (%s)",
-                                        change_state_service.c_str());
-                        }
-                    };
-
-                    if (m_ManageNodesClient && m_ManageNodesClient->wait_for_service(1s))
-                    {
-                        auto req2 = std::make_shared<nav2_msgs::srv::ManageLifecycleNodes::Request>();
-                        req2->command = nav2_msgs::srv::ManageLifecycleNodes::Request::STARTUP;
-                        auto fut2 = m_ManageNodesClient->async_send_request(req2);
-                        const auto rc2 = rclcpp::spin_until_future_complete(shared_from_this(), fut2, 5s);
-                        if (rc2 == rclcpp::FutureReturnCode::SUCCESS)
-                        {
-                            const auto resp2 = fut2.get();
-                            const bool ok = resp2 && resp2->success;
-                            RCLCPP_WARN(get_logger(), "Sent STARTUP to lifecycle manager (%s): success=%s",
-                                        lifecycle_manage_nodes_service_.c_str(), ok ? "true" : "false");
-                            if (!ok)
-                            {
-                                try_activate_directly();
-                            }
-                        }
-                        else
-                        {
-                            RCLCPP_WARN(get_logger(), "Failed to call lifecycle manager STARTUP (%s)",
-                                        lifecycle_manage_nodes_service_.c_str());
-                            try_activate_directly();
-                        }
-                        startup_sent = true;
-                    }
-                    else
-                    {
-                        RCLCPP_WARN(get_logger(), "Lifecycle manager service not available: %s",
-                                    lifecycle_manage_nodes_service_.c_str());
-                        try_activate_directly();
-                        startup_sent = true;
-                    }
+                    ensure_nav2_active_best_effort();
+                    startup_sent = true;
                 }
             }
         }
