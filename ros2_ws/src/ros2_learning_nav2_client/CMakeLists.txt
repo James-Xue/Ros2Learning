@@ -10,6 +10,7 @@ find_package(rclcpp REQUIRED)
 find_package(rclcpp_action REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(lifecycle_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
@@ -25,6 +26,7 @@ ament_target_dependencies(nav2_client
   rclcpp_action
   nav2_msgs
   geometry_msgs
+  lifecycle_msgs
   tf2
   tf2_geometry_msgs
 )

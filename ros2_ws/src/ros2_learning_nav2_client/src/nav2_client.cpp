@@ -10,6 +10,12 @@
 
 #include <chrono>
 
+#include <thread>
+
+#include <lifecycle_msgs/msg/state.hpp>
+#include <lifecycle_msgs/msg/transition.hpp>
+#include <lifecycle_msgs/srv/change_state.hpp>
+
 // 使用 std::chrono 的字面量（如 100ms, 1s 等）方便写时长常量
 using namespace std::chrono_literals;
 
@@ -27,17 +33,21 @@ Nav2Client::Nav2Client()
     goal_y_ = this->declare_parameter<double>("goal_y", 0.0);
     goal_yaw_ = this->declare_parameter<double>("goal_yaw", 0.0);
 
-    // rclcpp may pre-declare use_sim_time (via TimeSource / parameter events).
-    // Re-declaring it throws ParameterAlreadyDeclaredException on some setups.
-    if (!this->has_parameter("use_sim_time"))
-    {
-        use_sim_time_ = this->declare_parameter<bool>("use_sim_time", false);
-    }
-    else
-    {
-        this->get_parameter("use_sim_time", use_sim_time_);
-    }
+    tf_wait_timeout_sec_ = this->declare_parameter<double>("tf_wait_timeout_sec", 10.0);
     clock_wait_timeout_sec_ = this->declare_parameter<double>("clock_wait_timeout_sec", 20.0);
+
+    lifecycle_get_state_service_ =
+        this->declare_parameter<std::string>("lifecycle_get_state_service", "/bt_navigator/get_state");
+    lifecycle_manage_nodes_service_ = this->declare_parameter<std::string>(
+        "lifecycle_manage_nodes_service", "/lifecycle_manager_navigation/manage_nodes");
+    nav2_active_timeout_sec_ = this->declare_parameter<double>("nav2_active_timeout_sec", 20.0);
+    wait_nav2_active_ = this->declare_parameter<bool>("wait_nav2_active", true);
+    auto_startup_nav2_ = this->declare_parameter<bool>("auto_startup_nav2", true);
+
+    amcl_pose_topic_ = this->declare_parameter<std::string>("amcl_pose_topic", "/amcl_pose");
+    amcl_pose_timeout_sec_ = this->declare_parameter<double>("amcl_pose_timeout_sec", 10.0);
+    wait_amcl_pose_ = this->declare_parameter<bool>("wait_amcl_pose", true);
+
     // 默认 true：本仓库的 nav2_client 主要用于 Gazebo/Nav2 仿真栈，若不启用 sim time，
     // 发送 initialpose/goal 时的时间戳会是系统时间，可能导致 Nav2 侧判定异常并 ABORT。
     // 注意：rclcpp 可能会在内部自动声明 use_sim_time（TimeSource）。
@@ -50,6 +60,20 @@ Nav2Client::Nav2Client()
     {
         this->get_parameter("use_sim_time", use_sim_time_);
     }
+
+    m_GetStateClient = this->create_client<lifecycle_msgs::srv::GetState>(lifecycle_get_state_service_);
+    m_ManageNodesClient = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>(lifecycle_manage_nodes_service_);
+
+    m_AmclPoseSub =
+        this->create_subscription<PoseWithCovarianceStamped>(amcl_pose_topic_, 10,
+                                                             [this](const PoseWithCovarianceStamped::SharedPtr msg)
+                                                             {
+                                                                 {
+                                                                     std::lock_guard<std::mutex> lock(amcl_pose_mutex_);
+                                                                     last_amcl_pose_ = *msg;
+                                                                 }
+                                                                 have_amcl_pose_.store(true, std::memory_order_release);
+                                                             });
 
     // 创建一个发布器，用于发布初始位姿到 /initialpose 话题，队列深度为 10
     m_InitialPosePublisher = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
@@ -83,8 +107,29 @@ void Nav2Client::run()
         return;
     }
 
+    // 等待 Nav2 lifecycle manager 报告 active（避免过早发 goal 被拒）
+    if (wait_nav2_active_)
+    {
+        const bool nav2_active_ok = wait_for_nav2_active();
+        if (!nav2_active_ok)
+        {
+            RCLCPP_WARN(get_logger(), "Nav2 stack not active within timeout; proceeding anyway.");
+        }
+    }
+
     // 发布初始位姿到 /initialpose，便于在 RViz 或 AMCL 中设置初始位姿
     publish_initial_pose();
+
+    // 等待 AMCL 位姿（确保 initialpose 被处理；否则 BT Navigator 可能拒绝 goal）
+    if (wait_amcl_pose_)
+    {
+        const bool amcl_ok = wait_for_amcl_pose();
+        if (!amcl_ok)
+        {
+            RCLCPP_WARN(get_logger(), "No AMCL pose received within timeout; continuing.");
+        }
+    }
+
     // 等待 TF 中 map->base_link 的变换可用，确保里程计/定位信息就绪
     const bool is_tf_ready = wait_for_tf();
     if (!is_tf_ready)
@@ -138,15 +183,219 @@ void Nav2Client::run()
             break;
         }
     }
-    else
+    else if (result_code == rclcpp::FutureReturnCode::TIMEOUT)
     {
         // 如果等待超时或 future 未成功返回，则尝试取消目标
         RCLCPP_WARN(get_logger(), "Navigation timeout, canceling goal.");
+
+        if (!rclcpp::ok())
+        {
+            RCLCPP_WARN(get_logger(), "ROS is shutting down; skip cancel request.");
+            return;
+        }
+
         auto cancel_future = m_ActionClient->async_cancel_goal(goal_handle);
         // 等待取消操作完成，最长等待 5 秒
         const auto cancel_code = rclcpp::spin_until_future_complete(shared_from_this(), cancel_future, 5s);
         (void)cancel_code;
     }
+    else
+    {
+        // e.g. Ctrl-C: rclcpp::FutureReturnCode::INTERRUPTED
+        RCLCPP_WARN(get_logger(), "Navigation wait interrupted.");
+        return;
+    }
+}
+
+void Nav2Client::spin_some_for(std::chrono::nanoseconds duration)
+{
+    rclcpp::executors::SingleThreadedExecutor exec;
+    exec.add_node(shared_from_this());
+
+    const auto start = std::chrono::steady_clock::now();
+    while (rclcpp::ok())
+    {
+        exec.spin_some();
+
+        const auto elapsed = std::chrono::steady_clock::now() - start;
+        if (elapsed >= duration)
+        {
+            break;
+        }
+
+        std::this_thread::sleep_for(20ms);
+    }
+}
+
+bool Nav2Client::wait_for_nav2_active()
+{
+    if (!m_GetStateClient)
+    {
+        return false;
+    }
+
+    RCLCPP_INFO(get_logger(), "Waiting for Nav2 lifecycle get_state service: %s", lifecycle_get_state_service_.c_str());
+    if (!m_GetStateClient->wait_for_service(5s))
+    {
+        RCLCPP_WARN(get_logger(), "Service not available: %s", lifecycle_get_state_service_.c_str());
+        return false;
+    }
+
+    const auto start = std::chrono::steady_clock::now();
+    auto last_log = start;
+    bool startup_sent = false;
+    while (rclcpp::ok())
+    {
+        auto req = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+        auto future = m_GetStateClient->async_send_request(req);
+
+        const auto rc = rclcpp::spin_until_future_complete(shared_from_this(), future, 1s);
+        if (rc == rclcpp::FutureReturnCode::SUCCESS)
+        {
+            const auto resp = future.get();
+            if (resp)
+            {
+                const auto now = std::chrono::steady_clock::now();
+                if (now - last_log >= 1s)
+                {
+                    RCLCPP_INFO(get_logger(), "Nav2 state: id=%u label='%s' (%s)", resp->current_state.id,
+                                resp->current_state.label.c_str(), lifecycle_get_state_service_.c_str());
+                    last_log = now;
+                }
+
+                if (resp->current_state.id == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE)
+                {
+                    RCLCPP_INFO(get_logger(), "Nav2 lifecycle node is ACTIVE (%s)",
+                                lifecycle_get_state_service_.c_str());
+                    return true;
+                }
+
+                // If it's inactive, optionally try to startup the stack via lifecycle manager.
+                if (!startup_sent && auto_startup_nav2_ &&
+                    resp->current_state.id == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE)
+                {
+                    auto try_activate_directly = [this]() -> void
+                    {
+                        std::string change_state_service = "/bt_navigator/change_state";
+                        const std::string suffix = "/get_state";
+                        if (lifecycle_get_state_service_.size() > suffix.size() &&
+                            lifecycle_get_state_service_.compare(lifecycle_get_state_service_.size() - suffix.size(),
+                                                                 suffix.size(), suffix) == 0)
+                        {
+                            const std::string node_name = lifecycle_get_state_service_.substr(
+                                0, lifecycle_get_state_service_.size() - suffix.size());
+                            change_state_service = node_name + "/change_state";
+                        }
+
+                        auto client = this->create_client<lifecycle_msgs::srv::ChangeState>(change_state_service);
+                        if (!client->wait_for_service(1s))
+                        {
+                            RCLCPP_WARN(this->get_logger(), "Lifecycle change_state service not available: %s",
+                                        change_state_service.c_str());
+                            return;
+                        }
+
+                        auto req3 = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+                        req3->transition.id = lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE;
+                        auto fut3 = client->async_send_request(req3);
+                        const auto rc3 = rclcpp::spin_until_future_complete(this->shared_from_this(), fut3, 5s);
+                        if (rc3 == rclcpp::FutureReturnCode::SUCCESS)
+                        {
+                            const auto resp3 = fut3.get();
+                            const bool ok = resp3 && resp3->success;
+                            RCLCPP_WARN(this->get_logger(), "Tried direct ACTIVATE (%s): success=%s",
+                                        change_state_service.c_str(), ok ? "true" : "false");
+                        }
+                        else
+                        {
+                            RCLCPP_WARN(this->get_logger(), "Direct ACTIVATE call did not complete (%s)",
+                                        change_state_service.c_str());
+                        }
+                    };
+
+                    if (m_ManageNodesClient && m_ManageNodesClient->wait_for_service(1s))
+                    {
+                        auto req2 = std::make_shared<nav2_msgs::srv::ManageLifecycleNodes::Request>();
+                        req2->command = nav2_msgs::srv::ManageLifecycleNodes::Request::STARTUP;
+                        auto fut2 = m_ManageNodesClient->async_send_request(req2);
+                        const auto rc2 = rclcpp::spin_until_future_complete(shared_from_this(), fut2, 5s);
+                        if (rc2 == rclcpp::FutureReturnCode::SUCCESS)
+                        {
+                            const auto resp2 = fut2.get();
+                            const bool ok = resp2 && resp2->success;
+                            RCLCPP_WARN(get_logger(), "Sent STARTUP to lifecycle manager (%s): success=%s",
+                                        lifecycle_manage_nodes_service_.c_str(), ok ? "true" : "false");
+                            if (!ok)
+                            {
+                                try_activate_directly();
+                            }
+                        }
+                        else
+                        {
+                            RCLCPP_WARN(get_logger(), "Failed to call lifecycle manager STARTUP (%s)",
+                                        lifecycle_manage_nodes_service_.c_str());
+                            try_activate_directly();
+                        }
+                        startup_sent = true;
+                    }
+                    else
+                    {
+                        RCLCPP_WARN(get_logger(), "Lifecycle manager service not available: %s",
+                                    lifecycle_manage_nodes_service_.c_str());
+                        try_activate_directly();
+                        startup_sent = true;
+                    }
+                }
+            }
+        }
+
+        const auto elapsed = std::chrono::steady_clock::now() - start;
+        if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > nav2_active_timeout_sec_)
+        {
+            return false;
+        }
+
+        std::this_thread::sleep_for(200ms);
+    }
+
+    return false;
+}
+
+bool Nav2Client::wait_for_amcl_pose()
+{
+    if (amcl_pose_topic_.empty())
+    {
+        return false;
+    }
+
+    if (have_amcl_pose_.load(std::memory_order_acquire))
+    {
+        RCLCPP_INFO(get_logger(), "AMCL pose already received on %s", amcl_pose_topic_.c_str());
+        return true;
+    }
+
+    RCLCPP_INFO(get_logger(), "Waiting for AMCL pose on %s...", amcl_pose_topic_.c_str());
+
+    const auto start = std::chrono::steady_clock::now();
+    while (rclcpp::ok())
+    {
+        spin_some_for(200ms);
+        if (have_amcl_pose_.load(std::memory_order_acquire))
+        {
+            std::lock_guard<std::mutex> lock(amcl_pose_mutex_);
+            RCLCPP_INFO(get_logger(), "AMCL pose received: (%.3f, %.3f)", last_amcl_pose_.pose.pose.position.x,
+                        last_amcl_pose_.pose.pose.position.y);
+            return true;
+        }
+
+        const auto elapsed = std::chrono::steady_clock::now() - start;
+        if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > amcl_pose_timeout_sec_)
+        {
+            return false;
+        }
+    }
+
+    return false;
 }
 
 // 等待 TF 中 map -> base_link 变换可用的函数
@@ -287,6 +536,16 @@ Nav2Client::GoalHandle::SharedPtr Nav2Client::send_goal()
 
     // 配置发送选项，包括反馈回调
     auto send_goal_options = NavigateClient::SendGoalOptions();
+    // 目标响应回调：服务器会在接受/拒绝目标后回调一次。
+    send_goal_options.goal_response_callback = [this](GoalHandle::SharedPtr goal_handle)
+    {
+        if (!goal_handle)
+        {
+            RCLCPP_ERROR(get_logger(), "Goal rejected by server (goal_response_callback)");
+            return;
+        }
+        RCLCPP_INFO(get_logger(), "Goal accepted by server (goal_response_callback)");
+    };
     // 反馈回调：打印剩余距离（feedback->distance_remaining）
     send_goal_options.feedback_callback =
         [this](GoalHandle::SharedPtr, const std::shared_ptr<const NavigateToPose::Feedback> feedback)
@@ -308,7 +567,11 @@ Nav2Client::GoalHandle::SharedPtr Nav2Client::send_goal()
     if (!goal_handle)
     {
         // 如果服务器拒绝目标，打印错误并返回 nullptr
-        RCLCPP_ERROR(get_logger(), "Goal was rejected by server");
+        RCLCPP_ERROR(get_logger(),
+                     "Goal was rejected by server. Common causes: Nav2 not fully active yet, "
+                     "missing/invalid localization (initial pose), frame_id mismatch (goal frame='%s'), "
+                     "or sim time mismatch (use_sim_time).",
+                     map_frame_.c_str());
         return nullptr;
     }
 
