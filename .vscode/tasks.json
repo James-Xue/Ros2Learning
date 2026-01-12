@@ -69,6 +69,46 @@
             "problemMatcher": []
         },
         {
+            "label": "ROS2: Fetch rclcpp sources (jazzy)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}' && ./ros2_ws/scripts/setup_rclcpp_source.sh jazzy"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "ROS2: Fetch rcutils sources (jazzy)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}' && ./ros2_ws/scripts/setup_rcutils_source.sh jazzy"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "ROS2: Install ROS2 dbgsym (jazzy, sudo)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}' && ./ros2_ws/scripts/setup_ros2_dbgsym.sh jazzy"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "ROS2: Install ROS2 dbgsym (jazzy, sudo, all)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}' && ./ros2_ws/scripts/setup_ros2_dbgsym.sh jazzy --all"
+            ],
+            "problemMatcher": []
+        },
+        {
             "label": "ROS2: Prepare debug (jazzy)",
             "type": "shell",
             "command": "bash",
@@ -79,6 +119,8 @@
             "problemMatcher": [],
             "dependsOn": [
                 "ROS2: Build (Debug)",
+                "ROS2: Fetch rclcpp sources (jazzy)",
+                "ROS2: Fetch rcutils sources (jazzy)",
                 "ROS2: Export env (jazzy)",
                 "ROS2: Generate gdb source map (jazzy)"
             ]
