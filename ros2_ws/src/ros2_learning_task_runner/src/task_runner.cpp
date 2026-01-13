@@ -61,8 +61,12 @@ TaskRunner::TaskRunner()
 
     // 发布剩余距离（由 Nav2 feedback 提供）
     distance_pub_ = this->create_publisher<std_msgs::msg::Float32>("distance_remaining", 10);
+    // 发布任务状态，便于监控
+    state_pub_ = this->create_publisher<ros2_learning_task_runner::msg::TaskStatus>("task_status", 10);
     // 发布初始位姿到 /initialpose（可选）
     initial_pose_pub_ = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
+
+    set_state(TaskState::kIdle, "init");
 }
 
 // 主流程：等待环境 -> 读取配置 -> 依次执行 pickup -> dropoff
@@ -74,6 +78,7 @@ void TaskRunner::run()
         RCLCPP_INFO(get_logger(), "use_sim_time=true, waiting for /clock...");
         if (!wait_for_time())
         {
+            set_state(TaskState::kFailed, "wait_for_time", "/clock timeout");
             RCLCPP_ERROR(get_logger(), "/clock not received within %.1f seconds.", clock_wait_timeout_sec_);
             return;
         }
@@ -82,13 +87,16 @@ void TaskRunner::run()
     // 读取 YAML 配置，解析 dropoff 与 pickups
     if (!load_task_config(task_config_path_))
     {
+        set_state(TaskState::kFailed, "load_task_config", "invalid task config");
         RCLCPP_ERROR(get_logger(), "Failed to load task config: '%s'", task_config_path_.c_str());
         return;
     }
+    pickup_total_ = static_cast<uint32_t>(pickup_points_.size());
 
     // 等待 Nav2 action server
     if (!wait_for_action_server())
     {
+        set_state(TaskState::kFailed, "wait_for_action_server", "nav2 action unavailable");
         RCLCPP_ERROR(get_logger(), "Nav2 action server unavailable.");
         return;
     }
@@ -100,6 +108,7 @@ void TaskRunner::run()
 
     if (!wait_for_tf())
     {
+        set_state(TaskState::kFailed, "wait_for_tf", "tf unavailable");
         RCLCPP_ERROR(get_logger(), "TF %s -> %s unavailable.", map_frame_.c_str(), base_frame_.c_str());
         return;
     }
@@ -107,18 +116,21 @@ void TaskRunner::run()
     // 等待抓取/放置服务
     if (!wait_for_service(pick_client_, pick_service_name_))
     {
+        set_state(TaskState::kFailed, "wait_for_pick_service", "pick service unavailable");
         RCLCPP_ERROR(get_logger(), "Pick service unavailable: %s", pick_service_name_.c_str());
         return;
     }
 
     if (!wait_for_service(place_client_, place_service_name_))
     {
+        set_state(TaskState::kFailed, "wait_for_place_service", "place service unavailable");
         RCLCPP_ERROR(get_logger(), "Place service unavailable: %s", place_service_name_.c_str());
         return;
     }
 
     if (!has_dropoff_ || pickup_points_.empty())
     {
+        set_state(TaskState::kFailed, "validate_task_config", "missing dropoff or pickups");
         RCLCPP_ERROR(get_logger(), "Task config missing dropoff or pickups.");
         return;
     }
@@ -127,19 +139,24 @@ void TaskRunner::run()
     for (size_t i = 0; rclcpp::ok() && i < pickup_points_.size(); ++i)
     {
         const auto &pickup = pickup_points_[i];
+        current_pickup_index_ = static_cast<uint32_t>(i + 1);
         RCLCPP_INFO(get_logger(), "Pickup %zu/%zu: going to (%.2f, %.2f, %.2f)",
                     i + 1, pickup_points_.size(), pickup.x, pickup.y, pickup.yaw);
 
         // 1) 导航到采集点
+        set_state(TaskState::kGoingToPickup, "navigate_pickup");
         if (!navigate_to(pickup, "pickup"))
         {
+            set_state(TaskState::kFailed, "navigate_pickup", "navigation to pickup failed");
             RCLCPP_WARN(get_logger(), "Navigation to pickup %zu failed, skipping.", i + 1);
             continue;
         }
 
         // 2) 触发抓取服务
+        set_state(TaskState::kPicking, "pick");
         if (!call_trigger(pick_client_, "pick"))
         {
+            set_state(TaskState::kFailed, "pick", "pick failed");
             RCLCPP_WARN(get_logger(), "Pick failed at pickup %zu, skipping dropoff.", i + 1);
             continue;
         }
@@ -147,21 +164,70 @@ void TaskRunner::run()
         RCLCPP_INFO(get_logger(), "Going to dropoff (%.2f, %.2f, %.2f)",
                     dropoff_.x, dropoff_.y, dropoff_.yaw);
         // 3) 导航到投放点
+        set_state(TaskState::kGoingToDropoff, "navigate_dropoff");
         if (!navigate_to(dropoff_, "dropoff"))
         {
+            set_state(TaskState::kFailed, "navigate_dropoff", "navigation to dropoff failed");
             RCLCPP_WARN(get_logger(), "Navigation to dropoff failed, skipping place.");
             continue;
         }
 
         // 4) 触发放置服务
+        set_state(TaskState::kPlacing, "place");
         if (!call_trigger(place_client_, "place"))
         {
+            set_state(TaskState::kFailed, "place", "place failed");
             RCLCPP_WARN(get_logger(), "Place failed after pickup %zu.", i + 1);
             continue;
         }
     }
 
+    current_pickup_index_ = 0;
+    set_state(TaskState::kIdle, "completed");
     RCLCPP_INFO(get_logger(), "Task runner completed.");
+}
+
+void TaskRunner::set_state(TaskState state, const std::string &phase, const std::string &error)
+{
+    current_state_ = state;
+    current_phase_ = phase;
+    if (!error.empty())
+    {
+        last_error_ = error;
+    }
+    else if (state != TaskState::kFailed)
+    {
+        last_error_.clear();
+    }
+
+    ros2_learning_task_runner::msg::TaskStatus msg;
+    msg.state = state_to_string(state);
+    msg.phase = current_phase_;
+    msg.pickup_index = current_pickup_index_;
+    msg.pickup_total = pickup_total_;
+    msg.last_error = last_error_;
+    state_pub_->publish(msg);
+}
+
+std::string TaskRunner::state_to_string(TaskState state) const
+{
+    switch (state)
+    {
+    case TaskState::kIdle:
+        return "idle";
+    case TaskState::kGoingToPickup:
+        return "going_to_pickup";
+    case TaskState::kPicking:
+        return "picking";
+    case TaskState::kGoingToDropoff:
+        return "going_to_dropoff";
+    case TaskState::kPlacing:
+        return "placing";
+    case TaskState::kFailed:
+        return "failed";
+    default:
+        return "unknown";
+    }
 }
 
 bool TaskRunner::load_task_config(const std::string &path)

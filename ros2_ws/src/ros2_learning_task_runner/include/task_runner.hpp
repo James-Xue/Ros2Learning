@@ -9,6 +9,7 @@
 #include "nav2_msgs/action/navigate_to_pose.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_action/rclcpp_action.hpp"
+#include "ros2_learning_task_runner/msg/task_status.hpp"
 #include "std_msgs/msg/float32.hpp"
 #include "std_srvs/srv/trigger.hpp"
 #include "yaml-cpp/yaml.h"
@@ -29,6 +30,16 @@ class TaskRunner : public rclcpp::Node
     void run();
 
   private:
+    enum class TaskState
+    {
+        kIdle,
+        kGoingToPickup,
+        kPicking,
+        kGoingToDropoff,
+        kPlacing,
+        kFailed
+    };
+
     // 简化的 2D 位姿结构
     struct Pose2D
     {
@@ -52,6 +63,9 @@ class TaskRunner : public rclcpp::Node
     PoseStamped make_pose(const Pose2D &pose) const;
     bool navigate_to(const Pose2D &pose, const std::string &label);
     bool call_trigger(const rclcpp::Client<Trigger>::SharedPtr &client, const std::string &name);
+
+    void set_state(TaskState state, const std::string &phase, const std::string &error = "");
+    std::string state_to_string(TaskState state) const;
 
     // 参数与配置
     std::string map_frame_;
@@ -79,5 +93,12 @@ class TaskRunner : public rclcpp::Node
     rclcpp::Client<Trigger>::SharedPtr pick_client_;
     rclcpp::Client<Trigger>::SharedPtr place_client_;
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr distance_pub_;
+    rclcpp::Publisher<ros2_learning_task_runner::msg::TaskStatus>::SharedPtr state_pub_;
     rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr initial_pose_pub_;
+
+    TaskState current_state_{TaskState::kIdle};
+    std::string current_phase_;
+    std::string last_error_;
+    uint32_t current_pickup_index_{0};
+    uint32_t pickup_total_{0};
 };

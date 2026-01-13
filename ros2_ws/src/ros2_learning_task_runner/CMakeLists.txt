@@ -15,6 +15,13 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(yaml-cpp REQUIRED)
+find_package(rosidl_default_generators REQUIRED)
+
+ament_package_xml()
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/TaskStatus.msg"
+)
 
 add_executable(task_runner
   src/task_runner.cpp
@@ -33,6 +40,7 @@ ament_target_dependencies(task_runner
 )
 
 target_link_libraries(task_runner yaml-cpp)
+rosidl_target_interfaces(task_runner ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 target_include_directories(task_runner PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -55,5 +63,7 @@ install(DIRECTORY config
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
+
+ament_export_dependencies(rosidl_default_runtime)
 
 ament_package()
