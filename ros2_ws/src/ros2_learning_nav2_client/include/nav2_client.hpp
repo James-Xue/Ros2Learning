@@ -96,13 +96,9 @@ class Nav2Client : public rclcpp::Node
 
     // m_AmclPoseSub: 订阅 /amcl_pose，判断定位是否已就绪
     rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr m_AmclPoseSub;
-<<<<<<< Updated upstream
     // have_amcl_pose_: 标记是否收到过 AMCL 位姿，用于判断定位是否完成初始化
-    std::atomic<bool> have_amcl_pose_{false};
-    // amcl_pose_mutex_: 保护 last_amcl_pose_ 的并发访问，避免回调与主线程竞争
-=======
     std::atomic<bool> have_amcl_pose_;
->>>>>>> Stashed changes
+    // amcl_pose_mutex_: 保护 last_amcl_pose_ 的并发访问，避免回调与主线程竞争
     mutable std::mutex amcl_pose_mutex_;
     // last_amcl_pose_: 最近一次 AMCL 位姿，用于输出定位状态和调试
     PoseWithCovarianceStamped last_amcl_pose_;
