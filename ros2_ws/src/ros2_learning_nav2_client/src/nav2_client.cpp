@@ -48,7 +48,7 @@ Nav2Client::Nav2Client()
     amcl_pose_timeout_sec_ = this->declare_parameter<double>("amcl_pose_timeout_sec", 10.0);
     wait_amcl_pose_ = this->declare_parameter<bool>("wait_amcl_pose", true);
 
-    // 默认 true：本仓库的 nav2_client 主要用于 Gazebo/Nav2 仿真栈，若不启用 sim time，
+    // 默认 true：本仓库的 nav2_client 主要用于 Gazebo/Nav2 仿真栈，若不启用仿真时间，
     // 发送 initialpose/goal 时的时间戳会是系统时间，可能导致 Nav2 侧判定异常并 ABORT。
     // 注意：rclcpp 可能会在内部自动声明 use_sim_time（TimeSource）。
     // 因此这里要避免重复 declare 导致: "parameter 'use_sim_time' has already been declared"。
@@ -61,17 +61,22 @@ Nav2Client::Nav2Client()
         this->get_parameter("use_sim_time", use_sim_time_);
     }
 
+    // lifecycle 状态查询客户端：用于观察 Nav2 栈是否进入 ACTIVE
     m_GetStateClient = this->create_client<lifecycle_msgs::srv::GetState>(lifecycle_get_state_service_);
+    // lifecycle manager 客户端：用于一键启动/激活整个导航栈（可选）
     m_ManageNodesClient = this->create_client<nav2_msgs::srv::ManageLifecycleNodes>(lifecycle_manage_nodes_service_);
 
+    // 订阅 AMCL 位姿：当定位模块稳定输出位姿时，代表机器人已在地图坐标系中“定位成功”
     m_AmclPoseSub =
         this->create_subscription<PoseWithCovarianceStamped>(amcl_pose_topic_, 10,
                                                              [this](const PoseWithCovarianceStamped::SharedPtr msg)
                                                              {
+                                                                 // 保存最新位姿，后续用于打印或诊断定位是否正常
                                                                  {
                                                                      std::lock_guard<std::mutex> lock(amcl_pose_mutex_);
                                                                      last_amcl_pose_ = *msg;
                                                                  }
+                                                                 // 标记定位已就绪，允许继续发导航目标
                                                                  have_amcl_pose_.store(true, std::memory_order_release);
                                                              });
 
@@ -201,7 +206,7 @@ void Nav2Client::run()
     }
     else
     {
-        // e.g. Ctrl-C: rclcpp::FutureReturnCode::INTERRUPTED
+        // 例如 Ctrl-C 中断：rclcpp::FutureReturnCode::INTERRUPTED
         RCLCPP_WARN(get_logger(), "Navigation wait interrupted.");
         return;
     }
@@ -209,12 +214,15 @@ void Nav2Client::run()
 
 void Nav2Client::spin_some_for(std::chrono::nanoseconds duration)
 {
+    // 使用单线程执行器处理回调，确保在等待期间订阅/服务响应仍能被处理
     rclcpp::executors::SingleThreadedExecutor exec;
     exec.add_node(shared_from_this());
 
+    // 以真实时间计时，避免受 ROS 时间（仿真时钟）影响
     const auto start = std::chrono::steady_clock::now();
     while (rclcpp::ok())
     {
+        // 主动执行一次回调（订阅 /amcl_pose、服务返回等）
         exec.spin_some();
 
         const auto elapsed = std::chrono::steady_clock::now() - start;
@@ -223,23 +231,27 @@ void Nav2Client::spin_some_for(std::chrono::nanoseconds duration)
             break;
         }
 
+        // 适当 sleep，避免 while 空转占用过多 CPU
         std::this_thread::sleep_for(20ms);
     }
 }
 
 bool Nav2Client::is_lifecycle_active(uint8_t state_id) const
 {
+    // ACTIVE 表示 Nav2 行为树可响应目标，机器人具备执行导航任务的能力
     return state_id == lifecycle_msgs::msg::State::PRIMARY_STATE_ACTIVE;
 }
 
 bool Nav2Client::is_lifecycle_inactive(uint8_t state_id) const
 {
+    // INACTIVE 表示 Nav2 已配置但未激活，常见于刚启动或启动未完成的状态
     return state_id == lifecycle_msgs::msg::State::PRIMARY_STATE_INACTIVE;
 }
 
 void Nav2Client::log_nav2_state_throttled(uint8_t state_id, const std::string &state_label,
                                           std::chrono::steady_clock::time_point &last_log) const
 {
+    // 使用 steady_clock 做节流，保证日志频率稳定，不受仿真时间影响
     const auto now = std::chrono::steady_clock::now();
     if (now - last_log < 1s)
     {
@@ -253,6 +265,7 @@ void Nav2Client::log_nav2_state_throttled(uint8_t state_id, const std::string &s
 
 std::string Nav2Client::get_change_state_service_from_get_state_service() const
 {
+    // 默认值指向 bt_navigator（Nav2 的行为树节点），符合 Nav2 的典型默认命名
     std::string change_state_service = "/bt_navigator/change_state";
 
     const std::string suffix = "/get_state";
@@ -260,6 +273,7 @@ std::string Nav2Client::get_change_state_service_from_get_state_service() const
         lifecycle_get_state_service_.compare(lifecycle_get_state_service_.size() - suffix.size(), suffix.size(),
                                              suffix) == 0)
     {
+        // 截取节点名（去掉 /get_state 后缀）并拼出 /change_state 服务名
         const std::string node_name =
             lifecycle_get_state_service_.substr(0, lifecycle_get_state_service_.size() - suffix.size());
         change_state_service = node_name + "/change_state";
@@ -270,11 +284,13 @@ std::string Nav2Client::get_change_state_service_from_get_state_service() const
 
 bool Nav2Client::try_lifecycle_manager_startup()
 {
+    // 生命周期管理器用于统一启动/激活 Nav2 多个节点，适合完整导航栈的标准流程
     if (!m_ManageNodesClient)
     {
         return false;
     }
 
+    // 避免在服务尚未起来时阻塞过久
     if (!m_ManageNodesClient->wait_for_service(1s))
     {
         RCLCPP_WARN(get_logger(), "Lifecycle manager service not available: %s",
@@ -295,6 +311,7 @@ bool Nav2Client::try_lifecycle_manager_startup()
 
     const auto resp = fut.get();
     const bool ok = resp && resp->success;
+    // 记录启动结果，便于现场诊断“导航无法接收目标”的根因
     RCLCPP_WARN(get_logger(), "Sent STARTUP to lifecycle manager (%s): success=%s",
                 lifecycle_manage_nodes_service_.c_str(), ok ? "true" : "false");
     return ok;
@@ -302,6 +319,7 @@ bool Nav2Client::try_lifecycle_manager_startup()
 
 bool Nav2Client::try_activate_lifecycle_node()
 {
+    // 直接激活目标 lifecycle 节点（例如 bt_navigator），作为 lifecycle manager 不可用时的兜底
     const std::string change_state_service = get_change_state_service_from_get_state_service();
 
     auto client = this->create_client<lifecycle_msgs::srv::ChangeState>(change_state_service);
@@ -323,6 +341,7 @@ bool Nav2Client::try_activate_lifecycle_node()
 
     const auto resp = fut.get();
     const bool ok = resp && resp->success;
+    // 这里用 WARN 级别打印，提示用户导航栈可能还未完全就绪
     RCLCPP_WARN(get_logger(), "Tried direct ACTIVATE (%s): success=%s", change_state_service.c_str(),
                 ok ? "true" : "false");
     return ok;
@@ -330,6 +349,7 @@ bool Nav2Client::try_activate_lifecycle_node()
 
 void Nav2Client::ensure_nav2_active_best_effort()
 {
+    // 先尝试 manager 的统一启动；失败时再直接激活，尽力让导航栈可用
     const bool startup_ok = try_lifecycle_manager_startup();
     if (!startup_ok)
     {
@@ -339,11 +359,13 @@ void Nav2Client::ensure_nav2_active_best_effort()
 
 bool Nav2Client::wait_for_nav2_active()
 {
+    // 确保 get_state 客户端已创建，否则无法查询 Nav2 生命周期状态
     if (!m_GetStateClient)
     {
         return false;
     }
 
+    // 等待 get_state 服务出现，避免过早发送请求导致报错
     RCLCPP_INFO(get_logger(), "Waiting for Nav2 lifecycle get_state service: %s", lifecycle_get_state_service_.c_str());
     if (!m_GetStateClient->wait_for_service(5s))
     {
@@ -353,6 +375,7 @@ bool Nav2Client::wait_for_nav2_active()
 
     const auto start = std::chrono::steady_clock::now();
     auto last_log = start;
+    // startup_sent 防止重复启动/激活，避免触发 Nav2 过多状态切换
     bool startup_sent = false;
     while (rclcpp::ok())
     {
@@ -365,6 +388,7 @@ bool Nav2Client::wait_for_nav2_active()
             const auto resp = future.get();
             if (resp)
             {
+                // 读取当前状态并定期记录，便于用户判断卡在哪个阶段
                 log_nav2_state_throttled(resp->current_state.id, resp->current_state.label, last_log);
 
                 if (is_lifecycle_active(resp->current_state.id))
@@ -374,9 +398,10 @@ bool Nav2Client::wait_for_nav2_active()
                     return true;
                 }
 
-                // If it's inactive, optionally try to startup/activate once.
+                // 若处于 INACTIVE，可选择只尝试一次启动/激活
                 if (!startup_sent && auto_startup_nav2_ && is_lifecycle_inactive(resp->current_state.id))
                 {
+                    // 对真实机器人：避免长时间处于 INACTIVE 导致导航目标被拒
                     ensure_nav2_active_best_effort();
                     startup_sent = true;
                 }
@@ -384,11 +409,13 @@ bool Nav2Client::wait_for_nav2_active()
         }
 
         const auto elapsed = std::chrono::steady_clock::now() - start;
+        // 超时退出，避免无限等待；业务上允许继续尝试发目标（但可能被拒）
         if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > nav2_active_timeout_sec_)
         {
             return false;
         }
 
+        // 频率控制，避免对服务端造成过高请求压力
         std::this_thread::sleep_for(200ms);
     }
 
@@ -397,11 +424,13 @@ bool Nav2Client::wait_for_nav2_active()
 
 bool Nav2Client::wait_for_amcl_pose()
 {
+    // 未配置 AMCL 位姿话题时直接返回
     if (amcl_pose_topic_.empty())
     {
         return false;
     }
 
+    // 若已经收到过 AMCL 位姿，可直接认为定位就绪
     if (have_amcl_pose_.load(std::memory_order_acquire))
     {
         RCLCPP_INFO(get_logger(), "AMCL pose already received on %s", amcl_pose_topic_.c_str());
@@ -413,16 +442,19 @@ bool Nav2Client::wait_for_amcl_pose()
     const auto start = std::chrono::steady_clock::now();
     while (rclcpp::ok())
     {
+        // 处理订阅回调，等待 /amcl_pose 到来
         spin_some_for(200ms);
         if (have_amcl_pose_.load(std::memory_order_acquire))
         {
             std::lock_guard<std::mutex> lock(amcl_pose_mutex_);
+            // 打印最近一次定位结果，便于核对机器人初始落点
             RCLCPP_INFO(get_logger(), "AMCL pose received: (%.3f, %.3f)", last_amcl_pose_.pose.pose.position.x,
                         last_amcl_pose_.pose.pose.position.y);
             return true;
         }
 
         const auto elapsed = std::chrono::steady_clock::now() - start;
+        // 超时放弃等待，允许继续流程（可能导致导航拒绝或路径异常）
         if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > amcl_pose_timeout_sec_)
         {
             return false;

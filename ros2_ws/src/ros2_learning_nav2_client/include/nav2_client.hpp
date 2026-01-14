@@ -53,13 +53,20 @@ class Nav2Client : public rclcpp::Node
     // 等待 Nav2 lifecycle manager 报告栈已 active（避免过早发 goal 被拒）
     bool wait_for_nav2_active();
 
+    // 判断 lifecycle 节点是否处于 ACTIVE；机器人业务上表示导航行为树已可接管移动任务
     bool is_lifecycle_active(uint8_t state_id) const;
+    // 判断 lifecycle 节点是否处于 INACTIVE；此时节点已配置但未激活，导航不可用
     bool is_lifecycle_inactive(uint8_t state_id) const;
+    // 节流打印 Nav2 当前状态，避免等待阶段刷屏；便于排查导航未激活原因
     void log_nav2_state_throttled(uint8_t state_id, const std::string &state_label,
                                   std::chrono::steady_clock::time_point &last_log) const;
+    // 根据 get_state 服务名推导 change_state 服务名，适配不同 Nav2 节点命名
     std::string get_change_state_service_from_get_state_service() const;
+    // 通过 lifecycle manager 触发 Nav2 栈 STARTUP，适用于统一启动导航组件
     bool try_lifecycle_manager_startup();
+    // 直接向具体 lifecycle 节点发送 ACTIVATE，用于 manager 不可用时的兜底
     bool try_activate_lifecycle_node();
+    // 业务级“尽力而为”启动：先尝试 manager STARTUP，失败再直接 ACTIVATE
     void ensure_nav2_active_best_effort();
     // 等待时间（use_sim_time 场景中等待时钟非 0）
     bool wait_for_time();
@@ -89,8 +96,11 @@ class Nav2Client : public rclcpp::Node
 
     // m_AmclPoseSub: 订阅 /amcl_pose，判断定位是否已就绪
     rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr m_AmclPoseSub;
+    // have_amcl_pose_: 标记是否收到过 AMCL 位姿，用于判断定位是否完成初始化
     std::atomic<bool> have_amcl_pose_{false};
+    // amcl_pose_mutex_: 保护 last_amcl_pose_ 的并发访问，避免回调与主线程竞争
     mutable std::mutex amcl_pose_mutex_;
+    // last_amcl_pose_: 最近一次 AMCL 位姿，用于输出定位状态和调试
     PoseWithCovarianceStamped last_amcl_pose_;
 
     // 参数化配置：坐标系与初始/目标位姿
