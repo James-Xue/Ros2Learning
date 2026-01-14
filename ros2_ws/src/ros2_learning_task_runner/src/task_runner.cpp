@@ -27,44 +27,44 @@ TaskRunner::TaskRunner()
         : Node("task_runner")
 {
     // 基础参数：地图坐标系、Nav2 action 名称、任务配置路径
-    map_frame_ = this->declare_parameter<std::string>("map_frame", "map");
-    base_frame_ = this->declare_parameter<std::string>("base_frame", "base_link");
-    nav2_action_name_ = this->declare_parameter<std::string>("nav2_action_name", "navigate_to_pose");
-    task_config_path_ = this->declare_parameter<std::string>("task_config", "");
+    m_MapFrame = this->declare_parameter<std::string>("map_frame", "map");
+    m_BaseFrame = this->declare_parameter<std::string>("base_frame", "base_link");
+    m_Nav2ActionName = this->declare_parameter<std::string>("nav2_action_name", "navigate_to_pose");
+    m_TaskConfigPath = this->declare_parameter<std::string>("task_config", "");
     // 抓取/放置服务名称
-    pick_service_name_ = this->declare_parameter<std::string>("pick_service", "/manipulation/pick");
-    place_service_name_ = this->declare_parameter<std::string>("place_service", "/manipulation/place");
+    m_PickServiceName = this->declare_parameter<std::string>("pick_service", "/manipulation/pick");
+    m_PlaceServiceName = this->declare_parameter<std::string>("place_service", "/manipulation/place");
     // 超时参数：等待 /clock、单次导航超时
-    clock_wait_timeout_sec_ = this->declare_parameter<double>("clock_wait_timeout_sec", 20.0);
-    tf_wait_timeout_sec_ = this->declare_parameter<double>("tf_wait_timeout_sec", 10.0);
-    navigation_timeout_sec_ = this->declare_parameter<double>("navigation_timeout_sec", 120.0);
+    m_ClockWaitTimeoutSec = this->declare_parameter<double>("clock_wait_timeout_sec", 20.0);
+    m_TfWaitTimeoutSec = this->declare_parameter<double>("tf_wait_timeout_sec", 10.0);
+    m_NavigationTimeoutSec = this->declare_parameter<double>("navigation_timeout_sec", 120.0);
     // 初始位姿（可选）
-    initial_x_ = this->declare_parameter<double>("initial_x", 0.0);
-    initial_y_ = this->declare_parameter<double>("initial_y", 0.0);
-    initial_yaw_ = this->declare_parameter<double>("initial_yaw", 0.0);
-    publish_initial_pose_ = this->declare_parameter<bool>("publish_initial_pose", false);
+    m_InitialX = this->declare_parameter<double>("initial_x", 0.0);
+    m_InitialY = this->declare_parameter<double>("initial_y", 0.0);
+    m_InitialYaw = this->declare_parameter<double>("initial_yaw", 0.0);
+    m_PublishInitialPose = this->declare_parameter<bool>("publish_initial_pose", false);
     // 是否使用仿真时间（rclcpp 会提前声明 use_sim_time，避免重复声明）
     if (this->has_parameter("use_sim_time"))
     {
-        this->get_parameter("use_sim_time", use_sim_time_);
+        this->get_parameter("use_sim_time", m_UseSimTime);
     }
     else
     {
-        use_sim_time_ = this->declare_parameter<bool>("use_sim_time", true);
+        m_UseSimTime = this->declare_parameter<bool>("use_sim_time", true);
     }
 
     // Nav2 导航 Action 客户端
-    action_client_ = rclcpp_action::create_client<NavigateToPose>(this, nav2_action_name_);
+    m_ActionClient = rclcpp_action::create_client<NavigateToPose>(this, m_Nav2ActionName);
     // 抓取/放置 Service 客户端
-    pick_client_ = this->create_client<Trigger>(pick_service_name_);
-    place_client_ = this->create_client<Trigger>(place_service_name_);
+    m_PickClient = this->create_client<Trigger>(m_PickServiceName);
+    m_PlaceClient = this->create_client<Trigger>(m_PlaceServiceName);
 
     // 发布剩余距离（由 Nav2 feedback 提供）
-    distance_pub_ = this->create_publisher<std_msgs::msg::Float32>("distance_remaining", 10);
+    m_DistancePub = this->create_publisher<std_msgs::msg::Float32>("distance_remaining", 10);
     // 发布任务状态，便于监控
-    state_pub_ = this->create_publisher<ros2_learning_task_runner::msg::TaskStatus>("task_status", 10);
+    m_StatePub = this->create_publisher<ros2_learning_task_runner::msg::TaskStatus>("task_status", 10);
     // 发布初始位姿到 /initialpose（可选）
-    initial_pose_pub_ = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
+    m_InitialPosePub = this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
 
     set_state(TaskState::kIdle, "init");
 }
@@ -72,26 +72,26 @@ TaskRunner::TaskRunner()
 // 主流程：等待环境 -> 读取配置 -> 依次执行 pickup -> dropoff
 void TaskRunner::run()
 {
-    if (use_sim_time_)
+    if (m_UseSimTime)
     {
         // 仿真时间下先等 /clock，避免 now() 始终为 0
         RCLCPP_INFO(get_logger(), "use_sim_time=true, waiting for /clock...");
         if (!wait_for_time())
         {
             set_state(TaskState::kFailed, "wait_for_time", "/clock timeout");
-            RCLCPP_ERROR(get_logger(), "/clock not received within %.1f seconds.", clock_wait_timeout_sec_);
+            RCLCPP_ERROR(get_logger(), "/clock not received within %.1f seconds.", m_ClockWaitTimeoutSec);
             return;
         }
     }
 
     // 读取 YAML 配置，解析 dropoff 与 pickups
-    if (!load_task_config(task_config_path_))
+    if (!load_task_config(m_TaskConfigPath))
     {
         set_state(TaskState::kFailed, "load_task_config", "invalid task config");
-        RCLCPP_ERROR(get_logger(), "Failed to load task config: '%s'", task_config_path_.c_str());
+        RCLCPP_ERROR(get_logger(), "Failed to load task config: '%s'", m_TaskConfigPath.c_str());
         return;
     }
-    pickup_total_ = static_cast<uint32_t>(pickup_points_.size());
+    m_PickupTotal = static_cast<uint32_t>(m_PickupPoints.size());
 
     // 等待 Nav2 action server
     if (!wait_for_action_server())
@@ -101,7 +101,7 @@ void TaskRunner::run()
         return;
     }
 
-    if (publish_initial_pose_)
+    if (m_PublishInitialPose)
     {
         publish_initial_pose();
     }
@@ -109,26 +109,26 @@ void TaskRunner::run()
     if (!wait_for_tf())
     {
         set_state(TaskState::kFailed, "wait_for_tf", "tf unavailable");
-        RCLCPP_ERROR(get_logger(), "TF %s -> %s unavailable.", map_frame_.c_str(), base_frame_.c_str());
+        RCLCPP_ERROR(get_logger(), "TF %s -> %s unavailable.", m_MapFrame.c_str(), m_BaseFrame.c_str());
         return;
     }
 
     // 等待抓取/放置服务
-    if (!wait_for_service(pick_client_, pick_service_name_))
+    if (!wait_for_service(m_PickClient, m_PickServiceName))
     {
         set_state(TaskState::kFailed, "wait_for_pick_service", "pick service unavailable");
-        RCLCPP_ERROR(get_logger(), "Pick service unavailable: %s", pick_service_name_.c_str());
+        RCLCPP_ERROR(get_logger(), "Pick service unavailable: %s", m_PickServiceName.c_str());
         return;
     }
 
-    if (!wait_for_service(place_client_, place_service_name_))
+    if (!wait_for_service(m_PlaceClient, m_PlaceServiceName))
     {
         set_state(TaskState::kFailed, "wait_for_place_service", "place service unavailable");
-        RCLCPP_ERROR(get_logger(), "Place service unavailable: %s", place_service_name_.c_str());
+        RCLCPP_ERROR(get_logger(), "Place service unavailable: %s", m_PlaceServiceName.c_str());
         return;
     }
 
-    if (!has_dropoff_ || pickup_points_.empty())
+    if (!m_HasDropoff || m_PickupPoints.empty())
     {
         set_state(TaskState::kFailed, "validate_task_config", "missing dropoff or pickups");
         RCLCPP_ERROR(get_logger(), "Task config missing dropoff or pickups.");
@@ -136,12 +136,12 @@ void TaskRunner::run()
     }
 
     // 主循环：每个采集点执行“去采集点 -> 抓取 -> 回投放点 -> 放置”
-    for (size_t i = 0; rclcpp::ok() && i < pickup_points_.size(); ++i)
+    for (size_t i = 0; rclcpp::ok() && i < m_PickupPoints.size(); ++i)
     {
-        const auto &pickup = pickup_points_[i];
-        current_pickup_index_ = static_cast<uint32_t>(i + 1);
+        const auto &pickup = m_PickupPoints[i];
+        m_CurrentPickupIndex = static_cast<uint32_t>(i + 1);
         RCLCPP_INFO(get_logger(), "Pickup %zu/%zu: going to (%.2f, %.2f, %.2f)",
-                    i + 1, pickup_points_.size(), pickup.x, pickup.y, pickup.yaw);
+                    i + 1, m_PickupPoints.size(), pickup.x, pickup.y, pickup.yaw);
 
         // 1) 导航到采集点
         set_state(TaskState::kGoingToPickup, "navigate_pickup");
@@ -154,7 +154,7 @@ void TaskRunner::run()
 
         // 2) 触发抓取服务
         set_state(TaskState::kPicking, "pick");
-        if (!call_trigger(pick_client_, "pick"))
+        if (!call_trigger(m_PickClient, "pick"))
         {
             set_state(TaskState::kFailed, "pick", "pick failed");
             RCLCPP_WARN(get_logger(), "Pick failed at pickup %zu, skipping dropoff.", i + 1);
@@ -162,10 +162,10 @@ void TaskRunner::run()
         }
 
         RCLCPP_INFO(get_logger(), "Going to dropoff (%.2f, %.2f, %.2f)",
-                    dropoff_.x, dropoff_.y, dropoff_.yaw);
+                    m_Dropoff.x, m_Dropoff.y, m_Dropoff.yaw);
         // 3) 导航到投放点
         set_state(TaskState::kGoingToDropoff, "navigate_dropoff");
-        if (!navigate_to(dropoff_, "dropoff"))
+        if (!navigate_to(m_Dropoff, "dropoff"))
         {
             set_state(TaskState::kFailed, "navigate_dropoff", "navigation to dropoff failed");
             RCLCPP_WARN(get_logger(), "Navigation to dropoff failed, skipping place.");
@@ -174,7 +174,7 @@ void TaskRunner::run()
 
         // 4) 触发放置服务
         set_state(TaskState::kPlacing, "place");
-        if (!call_trigger(place_client_, "place"))
+        if (!call_trigger(m_PlaceClient, "place"))
         {
             set_state(TaskState::kFailed, "place", "place failed");
             RCLCPP_WARN(get_logger(), "Place failed after pickup %zu.", i + 1);
@@ -182,31 +182,31 @@ void TaskRunner::run()
         }
     }
 
-    current_pickup_index_ = 0;
+    m_CurrentPickupIndex = 0;
     set_state(TaskState::kIdle, "completed");
     RCLCPP_INFO(get_logger(), "Task runner completed.");
 }
 
 void TaskRunner::set_state(TaskState state, const std::string &phase, const std::string &error)
 {
-    current_state_ = state;
-    current_phase_ = phase;
+    m_CurrentState = state;
+    m_CurrentPhase = phase;
     if (!error.empty())
     {
-        last_error_ = error;
+        m_LastError = error;
     }
     else if (state != TaskState::kFailed)
     {
-        last_error_.clear();
+        m_LastError.clear();
     }
 
     ros2_learning_task_runner::msg::TaskStatus msg;
     msg.state = state_to_string(state);
-    msg.phase = current_phase_;
-    msg.pickup_index = current_pickup_index_;
-    msg.pickup_total = pickup_total_;
-    msg.last_error = last_error_;
-    state_pub_->publish(msg);
+    msg.phase = m_CurrentPhase;
+    msg.pickup_index = m_CurrentPickupIndex;
+    msg.pickup_total = m_PickupTotal;
+    msg.last_error = m_LastError;
+    m_StatePub->publish(msg);
 }
 
 std::string TaskRunner::state_to_string(TaskState state) const
@@ -253,18 +253,18 @@ bool TaskRunner::load_task_config(const std::string &path)
     // 允许在 YAML 中覆盖 map_frame
     if (root["map_frame"])
     {
-        map_frame_ = root["map_frame"].as<std::string>();
+        m_MapFrame = root["map_frame"].as<std::string>();
     }
 
     // 解析投放点
-    if (!parse_pose_node(root["dropoff"], "dropoff", &dropoff_))
+    if (!parse_pose_node(root["dropoff"], "dropoff", &m_Dropoff))
     {
         return false;
     }
-    has_dropoff_ = true;
+    m_HasDropoff = true;
 
     // 解析采集点列表
-    pickup_points_.clear();
+    m_PickupPoints.clear();
     const auto pickups = root["pickups"];
     if (!pickups || !pickups.IsSequence())
     {
@@ -280,7 +280,7 @@ bool TaskRunner::load_task_config(const std::string &path)
             RCLCPP_ERROR(get_logger(), "Invalid pickup at index %zu.", i);
             return false;
         }
-        pickup_points_.push_back(pose);
+        m_PickupPoints.push_back(pose);
     }
 
     return true;
@@ -320,7 +320,7 @@ bool TaskRunner::wait_for_time()
         }
 
         const auto elapsed = std::chrono::steady_clock::now() - start_wall;
-        if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > clock_wait_timeout_sec_)
+        if (std::chrono::duration_cast<std::chrono::duration<double>>(elapsed).count() > m_ClockWaitTimeoutSec)
         {
             return false;
         }
@@ -336,15 +336,15 @@ bool TaskRunner::wait_for_tf()
     tf2_ros::Buffer tf_buffer(this->get_clock());
     tf2_ros::TransformListener tf_listener(tf_buffer);
 
-    RCLCPP_INFO(get_logger(), "Waiting for TF %s -> %s...", map_frame_.c_str(), base_frame_.c_str());
+    RCLCPP_INFO(get_logger(), "Waiting for TF %s -> %s...", m_MapFrame.c_str(), m_BaseFrame.c_str());
     const auto start_time = this->now();
     while (rclcpp::ok())
     {
         try
         {
-            const auto transform_stamped = tf_buffer.lookupTransform(map_frame_, base_frame_, tf2::TimePointZero);
+            const auto transform_stamped = tf_buffer.lookupTransform(m_MapFrame, m_BaseFrame, tf2::TimePointZero);
             (void)transform_stamped;
-            RCLCPP_INFO(get_logger(), "TF %s -> %s is available.", map_frame_.c_str(), base_frame_.c_str());
+            RCLCPP_INFO(get_logger(), "TF %s -> %s is available.", m_MapFrame.c_str(), m_BaseFrame.c_str());
             return true;
         }
         catch (const tf2::TransformException &ex)
@@ -353,9 +353,9 @@ bool TaskRunner::wait_for_tf()
             rclcpp::sleep_for(200ms);
         }
 
-        if ((this->now() - start_time).seconds() > tf_wait_timeout_sec_)
+        if ((this->now() - start_time).seconds() > m_TfWaitTimeoutSec)
         {
-            RCLCPP_ERROR(get_logger(), "TF wait timeout after %.1f seconds.", tf_wait_timeout_sec_);
+            RCLCPP_ERROR(get_logger(), "TF wait timeout after %.1f seconds.", m_TfWaitTimeoutSec);
             return false;
         }
     }
@@ -366,8 +366,8 @@ bool TaskRunner::wait_for_tf()
 bool TaskRunner::wait_for_action_server()
 {
     // 等待 Nav2 action server 可用
-    RCLCPP_INFO(get_logger(), "Waiting for Nav2 action server '%s'...", nav2_action_name_.c_str());
-    return action_client_->wait_for_action_server(10s);
+    RCLCPP_INFO(get_logger(), "Waiting for Nav2 action server '%s'...", m_Nav2ActionName.c_str());
+    return m_ActionClient->wait_for_action_server(10s);
 }
 
 bool TaskRunner::wait_for_service(const rclcpp::Client<Trigger>::SharedPtr &client, const std::string &name)
@@ -381,7 +381,7 @@ TaskRunner::PoseStamped TaskRunner::make_pose(const Pose2D &pose) const
 {
     PoseStamped msg;
     // 坐标系与时间戳
-    msg.header.frame_id = map_frame_;
+    msg.header.frame_id = m_MapFrame;
     msg.header.stamp = this->now();
     // 位置
     msg.pose.position.x = pose.x;
@@ -398,13 +398,13 @@ TaskRunner::PoseStamped TaskRunner::make_pose(const Pose2D &pose) const
 void TaskRunner::publish_initial_pose()
 {
     PoseWithCovarianceStamped msg;
-    msg.header.frame_id = map_frame_;
+    msg.header.frame_id = m_MapFrame;
     msg.header.stamp = this->now();
-    msg.pose.pose.position.x = initial_x_;
-    msg.pose.pose.position.y = initial_y_;
+    msg.pose.pose.position.x = m_InitialX;
+    msg.pose.pose.position.y = m_InitialY;
 
     tf2::Quaternion q;
-    q.setRPY(0.0, 0.0, initial_yaw_);
+    q.setRPY(0.0, 0.0, m_InitialYaw);
     msg.pose.pose.orientation = tf2::toMsg(q);
 
     msg.pose.covariance[0] = 0.25;
@@ -415,7 +415,7 @@ void TaskRunner::publish_initial_pose()
     for (int i = 0; rclcpp::ok() && i < 5; ++i)
     {
         msg.header.stamp = this->now();
-        initial_pose_pub_->publish(msg);
+        m_InitialPosePub->publish(msg);
         rclcpp::sleep_for(200ms);
     }
 }
@@ -433,13 +433,13 @@ bool TaskRunner::navigate_to(const Pose2D &pose, const std::string &label)
         // 发布剩余距离，便于 UI/调试
         std_msgs::msg::Float32 msg;
         msg.data = feedback->distance_remaining;
-        distance_pub_->publish(msg);
+        m_DistancePub->publish(msg);
         RCLCPP_INFO_THROTTLE(get_logger(), *get_clock(), 2000,
                              "[%s] remaining distance: %.2f", label.c_str(), feedback->distance_remaining);
     };
 
     // 发送导航目标
-    auto goal_future = action_client_->async_send_goal(goal_msg, send_goal_options);
+    auto goal_future = m_ActionClient->async_send_goal(goal_msg, send_goal_options);
     const auto send_code = rclcpp::spin_until_future_complete(shared_from_this(), goal_future, 5s);
     if (send_code != rclcpp::FutureReturnCode::SUCCESS)
     {
@@ -455,8 +455,8 @@ bool TaskRunner::navigate_to(const Pose2D &pose, const std::string &label)
     }
 
     // 等待导航结果（带超时）
-    auto result_future = action_client_->async_get_result(goal_handle);
-    const std::chrono::duration<double> timeout(navigation_timeout_sec_);
+    auto result_future = m_ActionClient->async_get_result(goal_handle);
+    const std::chrono::duration<double> timeout(m_NavigationTimeoutSec);
     const auto result_code = rclcpp::spin_until_future_complete(shared_from_this(), result_future, timeout);
 
     if (result_code == rclcpp::FutureReturnCode::SUCCESS)
@@ -481,7 +481,7 @@ bool TaskRunner::navigate_to(const Pose2D &pose, const std::string &label)
 
     // 超时则尝试取消目标
     RCLCPP_WARN(get_logger(), "Navigation to %s timed out, canceling goal.", label.c_str());
-    auto cancel_future = action_client_->async_cancel_goal(goal_handle);
+    auto cancel_future = m_ActionClient->async_cancel_goal(goal_handle);
     (void)rclcpp::spin_until_future_complete(shared_from_this(), cancel_future, 5s);
     return false;
 }

@@ -68,37 +68,37 @@ class TaskRunner : public rclcpp::Node
     std::string state_to_string(TaskState state) const;
 
     // 参数与配置
-    std::string map_frame_;
-    std::string base_frame_;
-    std::string nav2_action_name_;
-    std::string task_config_path_;
-    std::string pick_service_name_;
-    std::string place_service_name_;
-    double clock_wait_timeout_sec_{20.0};
-    double tf_wait_timeout_sec_{10.0};
-    double navigation_timeout_sec_{120.0};
-    double initial_x_{0.0};
-    double initial_y_{0.0};
-    double initial_yaw_{0.0};
-    bool publish_initial_pose_{false};
-    bool use_sim_time_{true};
+    std::string m_MapFrame;
+    std::string m_BaseFrame;
+    std::string m_Nav2ActionName;
+    std::string m_TaskConfigPath;
+    std::string m_PickServiceName;
+    std::string m_PlaceServiceName;
+    double m_ClockWaitTimeoutSec{20.0};
+    double m_TfWaitTimeoutSec{10.0};
+    double m_NavigationTimeoutSec{120.0};
+    double m_InitialX{0.0};
+    double m_InitialY{0.0};
+    double m_InitialYaw{0.0};
+    bool m_PublishInitialPose{false};
+    bool m_UseSimTime{true};
 
     // 任务点数据
-    Pose2D dropoff_;
-    bool has_dropoff_{false};
-    std::vector<Pose2D> pickup_points_;
+    Pose2D m_Dropoff;
+    bool m_HasDropoff{false};
+    std::vector<Pose2D> m_PickupPoints;
 
     // ROS 通信句柄
-    rclcpp_action::Client<NavigateToPose>::SharedPtr action_client_;
-    rclcpp::Client<Trigger>::SharedPtr pick_client_;
-    rclcpp::Client<Trigger>::SharedPtr place_client_;
-    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr distance_pub_;
-    rclcpp::Publisher<ros2_learning_task_runner::msg::TaskStatus>::SharedPtr state_pub_;
-    rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr initial_pose_pub_;
+    rclcpp_action::Client<NavigateToPose>::SharedPtr m_ActionClient;
+    rclcpp::Client<Trigger>::SharedPtr m_PickClient;
+    rclcpp::Client<Trigger>::SharedPtr m_PlaceClient;
+    rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr m_DistancePub;
+    rclcpp::Publisher<ros2_learning_task_runner::msg::TaskStatus>::SharedPtr m_StatePub;
+    rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr m_InitialPosePub;
 
-    TaskState current_state_{TaskState::kIdle};
-    std::string current_phase_;
-    std::string last_error_;
-    uint32_t current_pickup_index_{0};
-    uint32_t pickup_total_{0};
+    TaskState m_CurrentState{TaskState::kIdle};
+    std::string m_CurrentPhase;
+    std::string m_LastError;
+    uint32_t m_CurrentPickupIndex{0};
+    uint32_t m_PickupTotal{0};
 };
