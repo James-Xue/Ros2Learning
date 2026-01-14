@@ -23,8 +23,9 @@ class TerminalRawMode
     TerminalRawMode &operator=(const TerminalRawMode &) = delete;
 
     // 尝试把 STDIN 设置为 raw mode。
-    // 返回 false 代表：不是 TTY（例如 launch 重定向/非交互终端）、或 termios 调用失败。
-    // 约定：enable() 失败时，调用方可以选择继续运行（只是不支持键盘输入），便于排障。
+    // 返回 false 代表：不是 TTY（例如 launch 重定向/非交互终端）、或 termios
+    // 调用失败。 约定：enable()
+    // 失败时，调用方可以选择继续运行（只是不支持键盘输入），便于排障。
     bool enable();
 
     // 如果曾经 enable() 成功，则恢复到原有终端模式。

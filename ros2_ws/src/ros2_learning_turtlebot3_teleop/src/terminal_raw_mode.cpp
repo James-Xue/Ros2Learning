@@ -81,7 +81,8 @@ void TerminalRawMode::disable()
 
 TerminalRawMode::~TerminalRawMode()
 {
-    // RAII：节点退出/异常时尽量恢复终端状态，避免终端留在 raw mode 导致“输入不回显”。
+    // RAII：节点退出/异常时尽量恢复终端状态，避免终端留在 raw mode
+    // 导致“输入不回显”。
     disable();
 }
 

@@ -7,9 +7,9 @@
 
 class ListenerNode : public rclcpp::Node
 {
-public:
+  public:
     ListenerNode();
 
-private:
+  private:
     rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
 };

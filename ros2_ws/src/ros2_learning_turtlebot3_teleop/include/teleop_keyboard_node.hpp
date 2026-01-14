@@ -6,7 +6,8 @@
 // - 便于 IDE / 调试器索引符号（尤其是 Debug 构建下的跳转与断点）
 //
 // 注意：键盘输入/终端 raw mode 的实现细节被刻意隐藏在 .cpp 内部，
-// 这里通过 forward-declare + unique_ptr 来避免把 termios 等平台相关头文件暴露给外部。
+// 这里通过 forward-declare + unique_ptr 来避免把 termios
+// 等平台相关头文件暴露给外部。
 
 #include <memory>
 #include <string>
@@ -26,14 +27,17 @@ class TerminalRawMode;
 // 重要设计点：
 // - 节点采用“固定频率发布 + 超时刹停”，而不是“有按键才发布”。
 //   这样下游控制器更容易处理，也能避免键盘输入中断导致持续运动。
-// - raw-mode 与 termios 等平台相关细节不放在这里，避免头文件膨胀、减少编译耦合。
+// - raw-mode 与 termios
+// 等平台相关细节不放在这里，避免头文件膨胀、减少编译耦合。
 class TeleopKeyboardNode : public rclcpp::Node
 {
   public:
-    // 构造函数会声明并读取参数、创建 publisher/timer，并尝试切换终端到 raw mode。
+    // 构造函数会声明并读取参数、创建 publisher/timer，并尝试切换终端到 raw
+    // mode。
     TeleopKeyboardNode();
 
-    // unique_ptr 持有一个 incomplete type，析构必须在 .cpp 里定义（保证类型完整）。
+    // unique_ptr 持有一个 incomplete type，析构必须在 .cpp
+    // 里定义（保证类型完整）。
     ~TeleopKeyboardNode() override;
 
   private:
@@ -44,7 +48,8 @@ class TeleopKeyboardNode : public rclcpp::Node
     void process_keyboard();
 
     // 平台相关的终端 raw-mode 控制器，放在 .cpp 中实现。
-    std::unique_ptr<ros2_learning_turtlebot3_teleop::detail::TerminalRawMode> raw_;
+    std::unique_ptr<ros2_learning_turtlebot3_teleop::detail::TerminalRawMode>
+        raw_;
 
     // cmd_vel_topic：发布的目标 topic（默认 /cmd_vel）。
     std::string cmd_vel_topic_;

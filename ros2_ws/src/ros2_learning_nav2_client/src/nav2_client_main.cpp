@@ -14,10 +14,12 @@ int main(int argc, char **argv)
 
     try
     {
-        // 使用智能指针创建 Nav2Client 节点实例（在构造函数中会创建 publisher 与 action client）
+        // 使用智能指针创建 Nav2Client 节点实例（在构造函数中会创建 publisher 与
+        // action client）
         auto node = std::make_shared<Nav2Client>();
 
-        // 调用节点的运行入口函数，内部会执行等待时间、发布初始位姿、等待 TF、发送目标并等待结果
+        // 调用节点的运行入口函数，内部会执行等待时间、发布初始位姿、等待
+        // TF、发送目标并等待结果
         node->run();
 
         // 清理并关闭 rclcpp，释放资源

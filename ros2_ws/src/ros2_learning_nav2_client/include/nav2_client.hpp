@@ -23,7 +23,8 @@
 #include "tf2/LinearMath/Quaternion.h"
 #include "tf2_geometry_msgs/tf2_geometry_msgs.hpp"
 
-// Nav2Client 类：封装一个最小的 Nav2 action 客户端，用于发布初始位姿并发送导航目标
+// Nav2Client 类：封装一个最小的 Nav2 action
+// 客户端，用于发布初始位姿并发送导航目标
 class Nav2Client : public rclcpp::Node
 {
   public:
@@ -33,7 +34,8 @@ class Nav2Client : public rclcpp::Node
     // GoalHandle: action 客户端返回的目标句柄类型，可用于取消或查询状态
     using GoalHandle = rclcpp_action::ClientGoalHandle<NavigateToPose>;
     // PoseWithCovarianceStamped: 带协方差的位姿消息类型（用于 /initialpose）
-    using PoseWithCovarianceStamped = geometry_msgs::msg::PoseWithCovarianceStamped;
+    using PoseWithCovarianceStamped =
+        geometry_msgs::msg::PoseWithCovarianceStamped;
     // PoseStamped: 目标位姿的消息类型（用于发送导航目标）
     using PoseStamped = geometry_msgs::msg::PoseStamped;
     // NavigateClient: action 客户端类型别名（模板化为 NavigateToPose）
@@ -53,13 +55,15 @@ class Nav2Client : public rclcpp::Node
     // 等待 Nav2 lifecycle manager 报告栈已 active（避免过早发 goal 被拒）
     bool wait_for_nav2_active();
 
-    // 判断 lifecycle 节点是否处于 ACTIVE；机器人业务上表示导航行为树已可接管移动任务
+    // 判断 lifecycle 节点是否处于
+    // ACTIVE；机器人业务上表示导航行为树已可接管移动任务
     bool is_lifecycle_active(uint8_t state_id) const;
     // 判断 lifecycle 节点是否处于 INACTIVE；此时节点已配置但未激活，导航不可用
     bool is_lifecycle_inactive(uint8_t state_id) const;
     // 节流打印 Nav2 当前状态，避免等待阶段刷屏；便于排查导航未激活原因
-    void log_nav2_state_throttled(uint8_t state_id, const std::string &state_label,
-                                  std::chrono::steady_clock::time_point &last_log) const;
+    void log_nav2_state_throttled(
+        uint8_t state_id, const std::string &state_label,
+        std::chrono::steady_clock::time_point &last_log) const;
     // 根据 get_state 服务名推导 change_state 服务名，适配不同 Nav2 节点命名
     std::string get_change_state_service_from_get_state_service() const;
     // 通过 lifecycle manager 触发 Nav2 栈 STARTUP，适用于统一启动导航组件
@@ -83,16 +87,19 @@ class Nav2Client : public rclcpp::Node
     void spin_some_for(std::chrono::nanoseconds duration);
 
     // 成员变量说明：
-    // m_InitialPosePublisher: 发布 /initialpose 的发布器，类型为 PoseWithCovarianceStamped
+    // m_InitialPosePublisher: 发布 /initialpose 的发布器，类型为
+    // PoseWithCovarianceStamped
     PosePublisher::SharedPtr m_InitialPosePublisher;
     // m_ActionClient: 与 Nav2 的 NavigateToPose action 交互的客户端
     NavigateClient::SharedPtr m_ActionClient;
 
-    // m_GetStateClient: 询问某个 Nav2 lifecycle 节点是否 active（默认 bt_navigator）
+    // m_GetStateClient: 询问某个 Nav2 lifecycle 节点是否 active（默认
+    // bt_navigator）
     rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr m_GetStateClient;
 
     // m_ManageNodesClient: 通过 lifecycle manager 启动/配置/激活 Nav2（可选）
-    rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr m_ManageNodesClient;
+    rclcpp::Client<nav2_msgs::srv::ManageLifecycleNodes>::SharedPtr
+        m_ManageNodesClient;
 
     // m_AmclPoseSub: 订阅 /amcl_pose，判断定位是否已就绪
     rclcpp::Subscription<PoseWithCovarianceStamped>::SharedPtr m_AmclPoseSub;

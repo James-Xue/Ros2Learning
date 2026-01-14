@@ -10,7 +10,8 @@
 //
 // 文件职责划分：
 // - TeleopKeyboardNode 的“声明”在 include/ 里（便于 IDE/调试器索引符号）。
-// - 终端 raw-mode 的平台细节被隔离在 terminal_raw_mode.*（避免 termios 头文件污染）。
+// - 终端 raw-mode 的平台细节被隔离在 terminal_raw_mode.*（避免 termios
+// 头文件污染）。
 // - 本文件保留：键盘读取/帮助文本/节点方法实现/main。
 
 #include <chrono>
@@ -32,8 +33,8 @@
 
 using namespace std::chrono_literals;
 
-// 为了让头文件更“干净”，所有终端 raw mode / 键盘读取的细节都放到 detail 命名空间里。
-// 外部只需要知道 TeleopKeyboardNode。
+// 为了让头文件更“干净”，所有终端 raw mode / 键盘读取的细节都放到 detail
+// 命名空间里。 外部只需要知道 TeleopKeyboardNode。
 namespace ros2_learning_turtlebot3_teleop::detail
 {
 int read_key_nonblocking()
@@ -87,7 +88,8 @@ std::string help_text()
 
 TeleopKeyboardNode::TeleopKeyboardNode()
         : rclcpp::Node("ros2_learning_teleop_keyboard")
-        , raw_(std::make_unique<ros2_learning_turtlebot3_teleop::detail::TerminalRawMode>())
+        , raw_(std::make_unique<
+               ros2_learning_turtlebot3_teleop::detail::TerminalRawMode>())
         , cmd_vel_topic_("/cmd_vel")
         , linear_scale_(0.22)
         , angular_scale_(2.84)
@@ -118,11 +120,14 @@ TeleopKeyboardNode::TeleopKeyboardNode()
 
     // Publisher：queue depth 10 对键盘遥控已足够。
     // 如果下游消费慢，旧消息会被丢弃，通常符合“只要最新速度”这一语义。
-    pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(cmd_vel_topic_, 10);
+    pub_ = this->create_publisher<geometry_msgs::msg::TwistStamped>(
+        cmd_vel_topic_, 10);
 
-    RCLCPP_INFO(this->get_logger(), "%s", ros2_learning_turtlebot3_teleop::detail::help_text().c_str());
-    RCLCPP_INFO(this->get_logger(), "Publishing to %s (linear_scale=%.3f angular_scale=%.3f)", cmd_vel_topic_.c_str(),
-                linear_scale_, angular_scale_);
+    RCLCPP_INFO(this->get_logger(), "%s",
+                ros2_learning_turtlebot3_teleop::detail::help_text().c_str());
+    RCLCPP_INFO(this->get_logger(),
+                "Publishing to %s (linear_scale=%.3f angular_scale=%.3f)",
+                cmd_vel_topic_.c_str(), linear_scale_, angular_scale_);
 
     // enable() 失败通常是：不是在 TTY 中运行、或权限/termios 调用失败。
     // 失败时仍然继续运行（只是键盘输入可能不可用），方便在 launch/日志里排查。
@@ -131,7 +136,8 @@ TeleopKeyboardNode::TeleopKeyboardNode()
     if (!raw_ || !raw_->enable())
     {
         RCLCPP_WARN(this->get_logger(),
-                    "Failed to enable terminal raw mode (is this a TTY?). Keyboard input may not work.");
+                    "Failed to enable terminal raw mode (is this a TTY?). "
+                    "Keyboard input may not work.");
     }
 
     // 记录“最后一次收到有效输入/更新”时间。
@@ -139,8 +145,9 @@ TeleopKeyboardNode::TeleopKeyboardNode()
     last_cmd_time_ = this->now();
 
     const auto period = std::chrono::duration<double>(1.0 / publish_rate_hz_);
-    timer_ = this->create_wall_timer(std::chrono::duration_cast<std::chrono::nanoseconds>(period),
-                                     std::bind(&TeleopKeyboardNode::on_timer, this));
+    timer_ = this->create_wall_timer(
+        std::chrono::duration_cast<std::chrono::nanoseconds>(period),
+        std::bind(&TeleopKeyboardNode::on_timer, this));
 }
 
 TeleopKeyboardNode::~TeleopKeyboardNode() = default;
@@ -174,7 +181,8 @@ void TeleopKeyboardNode::process_keyboard()
     // 这样可以一次性处理掉用户快速输入的多次按键，避免积压到下一次 timer。
     for (;;)
     {
-        const int key = ros2_learning_turtlebot3_teleop::detail::read_key_nonblocking();
+        const int key =
+            ros2_learning_turtlebot3_teleop::detail::read_key_nonblocking();
         if (key < 0)
         {
             break;
@@ -253,7 +261,9 @@ void TeleopKeyboardNode::process_keyboard()
             break;
         case '?':
             // 帮助：输出按键说明，方便在调试终端里随时查看。
-            RCLCPP_INFO(this->get_logger(), "%s", ros2_learning_turtlebot3_teleop::detail::help_text().c_str());
+            RCLCPP_INFO(
+                this->get_logger(), "%s",
+                ros2_learning_turtlebot3_teleop::detail::help_text().c_str());
             break;
         default:
             break;
@@ -270,8 +280,9 @@ void TeleopKeyboardNode::process_keyboard()
             {
                 angular_scale_ = 0.0;
             }
-            RCLCPP_INFO(this->get_logger(), "Updated scales: linear_scale=%.3f angular_scale=%.3f", linear_scale_,
-                        angular_scale_);
+            RCLCPP_INFO(this->get_logger(),
+                        "Updated scales: linear_scale=%.3f angular_scale=%.3f",
+                        linear_scale_, angular_scale_);
         }
 
         // 只要命令或缩放发生变化，就认为“收到新输入”。

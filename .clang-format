@@ -2,18 +2,21 @@ BasedOnStyle: LLVM
 IndentWidth: 4
 TabWidth: 4
 UseTab: Never
-ColumnLimit: 120
+ColumnLimit: 80
 
-# Braces: '{' on its own line
+# 大括号：每个大括号都放在新的一行 (Allman 风格)
 BreakBeforeBraces: Allman
 
-# Constructor initializer list style
+# 构造函数初始化列表风格
 BreakConstructorInitializers: BeforeComma
 PackConstructorInitializers: Never
 ConstructorInitializerIndentWidth: 8
 
-# Keep things readable
+# 保持代码可读性，禁止将短代码块合并为一行
 AllowShortFunctionsOnASingleLine: None
 AllowShortIfStatementsOnASingleLine: Never
 AllowShortLoopsOnASingleLine: false
 AllowShortBlocksOnASingleLine: Never
+
+# 允许对注释进行重排以符合行宽限制
+ReflowComments: true

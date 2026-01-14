@@ -9,10 +9,10 @@
 
 class TalkerNode : public rclcpp::Node
 {
-public:
+  public:
     TalkerNode();
 
-private:
+  private:
     void on_timer();
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
