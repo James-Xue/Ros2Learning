@@ -22,6 +22,34 @@ using namespace std::chrono_literals;
 // 构造函数：初始化为一个 rclcpp 节点，节点名为 "nav2_minimal_client"
 Nav2Client::Nav2Client()
         : Node("nav2_minimal_client")
+        , m_InitialPosePublisher() // 延后在构造函数体内 create_publisher
+        , m_ActionClient()         // 延后在构造函数体内 create_client
+        , m_GetStateClient()
+        , m_ManageNodesClient()
+        , m_AmclPoseSub() // 延后在构造函数体内 create_subscription
+        , have_amcl_pose_(false)
+        , amcl_pose_mutex_()
+        , last_amcl_pose_()
+        // 下面这批是“参数默认值”，会在构造函数体内通过 declare_parameter 允许被覆盖。
+        , map_frame_("map")
+        , base_frame_("base_link")
+        , initial_x_(0.0)
+        , initial_y_(0.0)
+        , initial_yaw_(0.0)
+        , goal_x_(1.0)
+        , goal_y_(0.0)
+        , goal_yaw_(0.0)
+        , tf_wait_timeout_sec_(10.0)
+        , clock_wait_timeout_sec_(20.0)
+        , nav2_active_timeout_sec_(20.0)
+        , amcl_pose_timeout_sec_(10.0)
+        , use_sim_time_(false)
+        , wait_nav2_active_(true)
+        , wait_amcl_pose_(true)
+        , auto_startup_nav2_(true)
+        , lifecycle_get_state_service_("/bt_navigator/get_state")
+        , lifecycle_manage_nodes_service_("/lifecycle_manager_navigation/manage_nodes")
+        , amcl_pose_topic_("/amcl_pose")
 {
     // 参数声明与读取：允许通过 ROS 参数覆盖默认值
     map_frame_ = this->declare_parameter<std::string>("map_frame", "map");
