@@ -1,5 +1,5 @@
 // 抓取/放置占位节点实现：提供 Trigger 服务并用 sleep 模拟耗时
-#include "manipulation_stub.hpp"
+#include "ros2_learning_manipulation_stub/manipulation_stub.hpp"
 
 #include <chrono>
 

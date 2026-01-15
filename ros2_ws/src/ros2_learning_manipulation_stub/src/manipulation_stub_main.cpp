@@ -1,5 +1,5 @@
 // manipulation_stub 节点入口：初始化 ROS2 并保持自旋
-#include "manipulation_stub.hpp"
+#include "ros2_learning_manipulation_stub/manipulation_stub.hpp"
 
 #include "rclcpp/rclcpp.hpp"
 
