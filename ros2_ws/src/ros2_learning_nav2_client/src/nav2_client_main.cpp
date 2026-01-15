@@ -2,7 +2,7 @@
 #include <memory>
 
 // 包含本地实现的 Nav2Client 类头文件（定义在 nav2_client.hpp）
-#include "nav2_client.hpp"
+#include "../include/nav2_client.hpp"
 // rclcpp 核心头文件，提供 ROS 2 节点初始化、shutdown、日志等功能
 #include "rclcpp/rclcpp.hpp"
 
