@@ -12,8 +12,16 @@ find_package(moveit_ros_planning_interface REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 
+# 添加include目录
+include_directories(include)
+
 # 添加可执行文件：arm_position_controller
-add_executable(arm_position_controller src/arm_position_controller.cpp)
+# 现在使用多个源文件
+add_executable(arm_position_controller 
+  src/arm_position_controller.cpp
+  src/arm_position_controller_main.cpp
+)
+
 ament_target_dependencies(arm_position_controller
   rclcpp
   moveit_ros_planning_interface
@@ -25,6 +33,11 @@ ament_target_dependencies(arm_position_controller
 install(TARGETS
   arm_position_controller
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# 安装头文件
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 if(BUILD_TESTING)
