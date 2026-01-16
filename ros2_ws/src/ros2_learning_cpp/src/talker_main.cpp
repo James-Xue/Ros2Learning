@@ -7,6 +7,8 @@ int main(int argc, char **argv)
     rclcpp::init(argc, argv);
 
     auto pNode = std::make_shared<TalkerNode>();
+    RCLCPP_INFO(rclcpp::get_logger("rclcpp"), " 你好 C++ 节点！ ");
+    // RCLCPP_INFO(rclcpp::Logger, " 你好 C++ 节点！ ");
     RCLCPP_INFO(pNode->get_logger(), " 你好 C++ 节点！ ");
 
     rclcpp::spin(pNode);
