@@ -71,6 +71,13 @@ public:
      * 展示基本的机械臂控制功能
      */
     void runDemo();
+    
+    /**
+     * @brief 画正方形演示
+     * 
+     * 使用笛卡尔路径规划让末端沿正方形路径运动
+     */
+    void drawSquare();
 
 private:
     /// MoveIt规划接口

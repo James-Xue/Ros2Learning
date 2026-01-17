@@ -27,11 +27,19 @@ int main(int argc, char** argv) {
         return 1;
     }
     
-    // 运行演示
+    // 运行基础演示
+    RCLCPP_INFO(node->get_logger(), "========== 基础演示 ==========");
     node->runDemo();
     
-    // 保持节点运行以便接收回调
-    rclcpp::spin(node);
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    
+    // 运行正方形演示
+    RCLCPP_INFO(node->get_logger(), "\n========== 笛卡尔路径演示 ==========");
+    node->drawSquare();
+    
+    // 演示完成，退出（不需要spin）
+    RCLCPP_INFO(node->get_logger(), "\n所有演示完成，程序退出");
+    // rclcpp::spin(node);  // 去掉spin，演示后自动退出
     
     rclcpp::shutdown();
     return 0;

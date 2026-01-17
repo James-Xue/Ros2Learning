@@ -4,6 +4,8 @@
 
 #include <chrono>
 #include <string>
+#include <moveit/robot_trajectory/robot_trajectory.h>
+#include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 
 /**
  * @brief 构造函数
@@ -162,5 +164,139 @@ void ArmPositionController::runDemo() {
     
     RCLCPP_INFO(m_logger, "\n========================================");
     RCLCPP_INFO(m_logger, "  演示完成！");
+    RCLCPP_INFO(m_logger, "========================================\n");
+}
+
+/**
+ * @brief 画正方形演示
+ * 
+ * 使用笛卡尔路径规划让末端沿正方形路径运动
+ * 关键API：computeCartesianPath() - 强制沿直线运动
+ */
+void ArmPositionController::drawSquare() {
+    RCLCPP_INFO(m_logger, "\n========================================");
+    RCLCPP_INFO(m_logger, "  笛卡尔路径演示：画正方形");
+    RCLCPP_INFO(m_logger, "========================================\n");
+    
+    // ═══════════════════════════════════════
+    // 步骤1: 移动到起始位置
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "[1] 移动到起始位置");
+    
+    geometry_msgs::msg::Pose start_pose;
+    start_pose.orientation.w = 1.0;  // 保持水平朝向
+    start_pose.position.x = 0.4;     // 前方40cm
+    start_pose.position.y = 0.1;     // 左侧10cm（正方形左下角）
+    start_pose.position.z = 0.4;     // 高度40cm
+    
+    m_moveGroup->setPoseTarget(start_pose);
+    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    
+    if (m_moveGroup->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS) {
+        RCLCPP_INFO(m_logger, "  到达起始点: (%.2f, %.2f, %.2f)", 
+                    start_pose.position.x, start_pose.position.y, start_pose.position.z);
+        m_moveGroup->execute(plan);
+    } else {
+        RCLCPP_ERROR(m_logger, "  移动到起始位置失败！");
+        return;
+    }
+    
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤2: 定义正方形的4个顶点
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[2] 规划正方形路径");
+    
+    double square_size = 0.1;  // 正方形边长10cm
+    
+    std::vector<geometry_msgs::msg::Pose> waypoints;
+    
+    // 当前位置作为起点（左下角）
+    waypoints.push_back(start_pose);
+    
+    // 顶点1: 右下角（y方向-）
+    geometry_msgs::msg::Pose corner1 = start_pose;
+    corner1.position.y -= square_size;
+    waypoints.push_back(corner1);
+    RCLCPP_INFO(m_logger, "  顶点1（右下）: (%.2f, %.2f, %.2f)", 
+                corner1.position.x, corner1.position.y, corner1.position.z);
+    
+    // 顶点2: 右上角（x方向+）
+    geometry_msgs::msg::Pose corner2 = corner1;
+    corner2.position.x += square_size;
+    waypoints.push_back(corner2);
+    RCLCPP_INFO(m_logger, "  顶点2（右上）: (%.2f, %.2f, %.2f)", 
+                corner2.position.x, corner2.position.y, corner2.position.z);
+    
+    // 顶点3: 左上角（y方向+）
+    geometry_msgs::msg::Pose corner3 = corner2;
+    corner3.position.y += square_size;
+    waypoints.push_back(corner3);
+    RCLCPP_INFO(m_logger, "  顶点3（左上）: (%.2f, %.2f, %.2f)", 
+                corner3.position.x, corner3.position.y, corner3.position.z);
+    
+    // 顶点4: 回到起点（闭合正方形）
+    waypoints.push_back(start_pose);
+    RCLCPP_INFO(m_logger, "  顶点4（回到起点）");
+    
+    // ═══════════════════════════════════════
+    // 步骤3: 计算笛卡尔路径
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[3] 计算笛卡尔路径（强制直线运动）");
+    
+    moveit_msgs::msg::RobotTrajectory trajectory;
+    const double eef_step = 0.01;  // 末端步长1cm（路径分辨率）
+    
+    double fraction = m_moveGroup->computeCartesianPath(
+        waypoints,      // 路径点
+        eef_step,       // 步长
+        trajectory      // 输出轨迹
+    );
+    
+    RCLCPP_INFO(m_logger, "  路径规划完成度: %.1f%%", fraction * 100.0);
+    RCLCPP_INFO(m_logger, "  轨迹点数: %zu", trajectory.joint_trajectory.points.size());
+    
+    if (fraction < 0.99) {  // 如果没有完成100%
+        RCLCPP_WARN(m_logger, "  警告：路径未完全规划！可能遇到奇异点或障碍");
+    }
+    
+    // ═══════════════════════════════════════
+    // 步骤4: 执行轨迹
+    // ═══════════════════════════════════════
+    if (fraction > 0.5) {  // 至少完成50%才执行
+        RCLCPP_INFO(m_logger, "\n[4] 开始画正方形...");
+        
+        // 时间参数化（添加速度信息）
+        robot_trajectory::RobotTrajectory rt(m_moveGroup->getRobotModel(), m_moveGroup->getName());
+        rt.setRobotTrajectoryMsg(*m_moveGroup->getCurrentState(), trajectory);
+        
+        // 应用速度和加速度缩放
+        trajectory_processing::TimeOptimalTrajectoryGeneration totg;
+        totg.computeTimeStamps(rt, 0.3, 0.3);  // 30%速度和加速度
+        
+        rt.getRobotTrajectoryMsg(trajectory);
+        
+        // 执行
+        moveit::planning_interface::MoveGroupInterface::Plan square_plan;
+        square_plan.trajectory = trajectory;  // 修复：使用trajectory而不是trajectory_
+        
+        m_moveGroup->execute(square_plan);
+        
+        RCLCPP_INFO(m_logger, "\n✓ 正方形绘制完成！");
+    } else {
+        RCLCPP_ERROR(m_logger, "  路径规划失败率太高，取消执行");
+    }
+    
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤5: 返回ready姿态
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[5] 返回ready姿态");
+    moveToNamedTarget("ready");
+    
+    RCLCPP_INFO(m_logger, "\n========================================");
+    RCLCPP_INFO(m_logger, "  正方形演示完成！");
     RCLCPP_INFO(m_logger, "========================================\n");
 }
