@@ -11,6 +11,15 @@
 #include <moveit/move_group_interface/move_group_interface.h>
 #include <geometry_msgs/msg/pose.hpp>
 
+// ═══════════════════════════════════════
+// 类型别名 - 简化长类型名
+// ═══════════════════════════════════════
+using MoveGroup = moveit::planning_interface::MoveGroupInterface;
+using Pose = geometry_msgs::msg::Pose;
+using Plan = moveit::planning_interface::MoveGroupInterface::Plan;
+using Trajectory = moveit_msgs::msg::RobotTrajectory;
+using ErrorCode = moveit::core::MoveItErrorCode;
+
 /**
  * @class ArmPositionController
  * @brief 机械臂位置控制器类 - 用于学习MoveIt 2基础
@@ -54,7 +63,7 @@ public:
      * 
      * @param target_pose 目标位姿（位置+方向）
      */
-    void moveToPose(const geometry_msgs::msg::Pose& target_pose);
+    void moveToPose(const Pose& target_pose);
     
     /**
      * @brief 直接控制关节角度
@@ -81,7 +90,7 @@ public:
 
 private:
     /// MoveIt规划接口
-    std::shared_ptr<moveit::planning_interface::MoveGroupInterface> m_moveGroup;
+    std::shared_ptr<MoveGroup> m_moveGroup;
     
     /// 日志记录器
     rclcpp::Logger m_logger;

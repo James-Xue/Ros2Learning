@@ -34,7 +34,7 @@ bool ArmPositionController::initialize(const std::string& planning_group) {
     try {
         // 创建MoveGroup接口
         // 这是与MoveIt规划器交互的主要接口
-        m_moveGroup = std::make_shared<moveit::planning_interface::MoveGroupInterface>(
+        m_moveGroup = std::make_shared<MoveGroup>(
             shared_from_this(), planning_group);
         
         RCLCPP_INFO(m_logger, "规划组: %s", planning_group.c_str());
@@ -63,7 +63,7 @@ void ArmPositionController::moveToNamedTarget(const std::string& target_name) {
     
     // 规划并执行运动
     // move()函数会自动调用plan()和execute()
-    auto success = (m_moveGroup->move() == moveit::core::MoveItErrorCode::SUCCESS);
+    auto success = (m_moveGroup->move() == ErrorCode::SUCCESS);
     
     if (success) {
         RCLCPP_INFO(m_logger, "成功到达姿态: %s", target_name.c_str());
@@ -79,7 +79,7 @@ void ArmPositionController::moveToNamedTarget(const std::string& target_name) {
  * 
  * @param target_pose 目标位姿（位置+方向）
  */
-void ArmPositionController::moveToPose(const geometry_msgs::msg::Pose& target_pose) {
+void ArmPositionController::moveToPose(const Pose& target_pose) {
     RCLCPP_INFO(m_logger, "正在移动到笛卡尔空间目标位置");
     RCLCPP_INFO(m_logger, "  位置: [%.3f, %.3f, %.3f]", 
                 target_pose.position.x, 
@@ -90,8 +90,8 @@ void ArmPositionController::moveToPose(const geometry_msgs::msg::Pose& target_po
     m_moveGroup->setPoseTarget(target_pose);
     
     // 规划运动路径
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
-    auto success = (m_moveGroup->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS);
+    Plan plan;
+    auto success = (m_moveGroup->plan(plan) == ErrorCode::SUCCESS);
     
     if (success) {
         RCLCPP_INFO(m_logger, "规划成功，正在执行...");
@@ -124,7 +124,7 @@ void ArmPositionController::moveJoints(const std::vector<double>& joint_values) 
     m_moveGroup->setJointValueTarget(joint_values);
     
     // 执行规划和运动
-    auto success = (m_moveGroup->move() == moveit::core::MoveItErrorCode::SUCCESS);
+    auto success = (m_moveGroup->move() == ErrorCode::SUCCESS);
     
     if (success) {
         RCLCPP_INFO(m_logger, "成功到达目标关节角度");
@@ -150,7 +150,7 @@ void ArmPositionController::runDemo() {
     
     // 演示2: 移动到指定位置
     RCLCPP_INFO(m_logger, "\n[演示2] 移动到自定义笛卡尔位置");
-    geometry_msgs::msg::Pose target_pose;
+    Pose target_pose;
     target_pose.orientation.w = 1.0;  // 四元数单位方向
     target_pose.position.x = 0.28;
     target_pose.position.y = -0.2;
@@ -183,16 +183,16 @@ void ArmPositionController::drawSquare() {
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "[1] 移动到起始位置");
     
-    geometry_msgs::msg::Pose start_pose;
+    Pose start_pose;
     start_pose.orientation.w = 1.0;  // 保持水平朝向
     start_pose.position.x = 0.4;     // 前方40cm
     start_pose.position.y = 0.1;     // 左侧10cm（正方形左下角）
     start_pose.position.z = 0.4;     // 高度40cm
     
     m_moveGroup->setPoseTarget(start_pose);
-    moveit::planning_interface::MoveGroupInterface::Plan plan;
+    Plan plan;
     
-    if (m_moveGroup->plan(plan) == moveit::core::MoveItErrorCode::SUCCESS) {
+    if (m_moveGroup->plan(plan) == ErrorCode::SUCCESS) {
         RCLCPP_INFO(m_logger, "  到达起始点: (%.2f, %.2f, %.2f)", 
                     start_pose.position.x, start_pose.position.y, start_pose.position.z);
         m_moveGroup->execute(plan);
@@ -210,27 +210,27 @@ void ArmPositionController::drawSquare() {
     
     double square_size = 0.1;  // 正方形边长10cm
     
-    std::vector<geometry_msgs::msg::Pose> waypoints;
+    std::vector<Pose> waypoints;
     
     // 当前位置作为起点（左下角）
     waypoints.push_back(start_pose);
     
     // 顶点1: 右下角（y方向-）
-    geometry_msgs::msg::Pose corner1 = start_pose;
+    Pose corner1 = start_pose;
     corner1.position.y -= square_size;
     waypoints.push_back(corner1);
     RCLCPP_INFO(m_logger, "  顶点1（右下）: (%.2f, %.2f, %.2f)", 
                 corner1.position.x, corner1.position.y, corner1.position.z);
     
     // 顶点2: 右上角（x方向+）
-    geometry_msgs::msg::Pose corner2 = corner1;
+    Pose corner2 = corner1;
     corner2.position.x += square_size;
     waypoints.push_back(corner2);
     RCLCPP_INFO(m_logger, "  顶点2（右上）: (%.2f, %.2f, %.2f)", 
                 corner2.position.x, corner2.position.y, corner2.position.z);
     
     // 顶点3: 左上角（y方向+）
-    geometry_msgs::msg::Pose corner3 = corner2;
+    Pose corner3 = corner2;
     corner3.position.y += square_size;
     waypoints.push_back(corner3);
     RCLCPP_INFO(m_logger, "  顶点3（左上）: (%.2f, %.2f, %.2f)", 
@@ -245,7 +245,7 @@ void ArmPositionController::drawSquare() {
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "\n[3] 计算笛卡尔路径（强制直线运动）");
     
-    moveit_msgs::msg::RobotTrajectory trajectory;
+    Trajectory trajectory;
     const double eef_step = 0.01;  // 末端步长1cm（路径分辨率）
     
     double fraction = m_moveGroup->computeCartesianPath(
@@ -278,8 +278,8 @@ void ArmPositionController::drawSquare() {
         rt.getRobotTrajectoryMsg(trajectory);
         
         // 执行
-        moveit::planning_interface::MoveGroupInterface::Plan square_plan;
-        square_plan.trajectory = trajectory;  // 修复：使用trajectory而不是trajectory_
+        Plan square_plan;
+        square_plan.trajectory = trajectory;
         
         m_moveGroup->execute(square_plan);
         
