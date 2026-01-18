@@ -23,5 +23,13 @@
     "[c]": {
         "editor.formatOnSave": true,
         "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
+    "files.associations": {
+        "*.rviz": "yaml",
+        "*.xacro": "xml",
+        "*.urdf": "xml",
+        "*.launch": "xml",
+        "*.world": "xml",
+        "*.sdf": "xml"
     }
 }
