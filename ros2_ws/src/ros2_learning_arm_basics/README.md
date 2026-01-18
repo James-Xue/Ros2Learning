@@ -49,16 +49,28 @@ colcon build --packages-select ros2_learning_arm_basics
 source install/setup.bash
 ```
 
-### 2. 启动仿真环境
+### 2. 一键启动演示（推荐）
 ```bash
-# 在终端1：启动MoveIt demo
-cd ~/Ros2Learning/ros2_ws
-./start_panda_simulation.sh
+# 启动仿真环境和控制节点
+ros2 launch ros2_learning_arm_basics demo.launch.py
 ```
 
-### 3. 运行控制节点
+这个命令会自动：
+- ✅ 启动 MoveIt 2 仿真环境
+- ✅ 打开 RViz2 可视化界面
+- ✅ 启动机械臂控制节点
+- ✅ 执行演示动作序列
+
+### 3. 手动启动（可选）
+
+如果需要分别启动各个组件：
+
 ```bash
-# 在终端2：运行演示程序
+# 终端1：启动MoveIt demo
+cd ~/Ros2Learning/ros2_ws
+./start_panda_simulation.sh
+
+# 终端2：运行控制节点
 cd ~/Ros2Learning/ros2_ws
 source install/setup.bash
 ros2 run ros2_learning_arm_basics arm_position_controller
@@ -79,10 +91,14 @@ ros2_learning_arm_basics/
 ├── CMakeLists.txt
 ├── package.xml
 ├── README.md                           # 本文件
+├── launch/
+│   └── demo.launch.py                 # 一键启动launch文件
 ├── src/
-│   └── arm_position_controller.cpp    # 位置控制节点（带详细注释）
+│   ├── arm_position_controller.cpp    # 位置控制器实现
+│   └── arm_position_controller_main.cpp # 主函数
 ├── include/
-│   └── ros2_learning_arm_basics/      # 头文件目录（预留）
+│   └── ros2_learning_arm_basics/
+│       └── arm_position_controller.hpp # 头文件
 └── docs/
     ├── README.md                       # 文档索引
     └── MOVEIT_DEEP_DIVE.md            # MoveIt深度解析
