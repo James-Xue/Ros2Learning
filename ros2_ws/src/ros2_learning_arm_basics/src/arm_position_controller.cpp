@@ -4,8 +4,6 @@
 
 #include <chrono>
 #include <string>
-#include <moveit/robot_trajectory/robot_trajectory.hpp>
-#include <moveit/trajectory_processing/time_optimal_trajectory_generation.hpp>
 
 /**
  * @brief 构造函数
@@ -267,17 +265,8 @@ void ArmPositionController::drawSquare() {
     if (fraction > 0.5) {  // 至少完成50%才执行
         RCLCPP_INFO(m_logger, "\n[4] 开始画正方形...");
         
-        // 时间参数化（添加速度信息）
-        robot_trajectory::RobotTrajectory rt(m_moveGroup->getRobotModel(), m_moveGroup->getName());
-        rt.setRobotTrajectoryMsg(*m_moveGroup->getCurrentState(), trajectory);
-        
-        // 应用速度和加速度缩放
-        trajectory_processing::TimeOptimalTrajectoryGeneration totg;
-        totg.computeTimeStamps(rt, 0.3, 0.3);  // 30%速度和加速度
-        
-        rt.getRobotTrajectoryMsg(trajectory);
-        
-        // 执行
+        // 直接执行笛卡尔路径
+        // computeCartesianPath 已经生成了完整的轨迹，包含时间信息
         Plan square_plan;
         square_plan.trajectory = trajectory;
         
