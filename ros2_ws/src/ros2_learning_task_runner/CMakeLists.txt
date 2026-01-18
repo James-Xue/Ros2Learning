@@ -40,7 +40,11 @@ ament_target_dependencies(task_runner
 )
 
 target_link_libraries(task_runner yaml-cpp)
-rosidl_target_interfaces(task_runner ${PROJECT_NAME} "rosidl_typesupport_cpp")
+
+# 获取类型支持目标并链接（替代过时的 rosidl_target_interfaces）
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(task_runner "${cpp_typesupport_target}")
 
 target_include_directories(task_runner PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
