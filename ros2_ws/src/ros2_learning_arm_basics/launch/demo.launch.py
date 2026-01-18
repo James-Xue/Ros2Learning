@@ -10,7 +10,7 @@ Panda机械臂演示Launch文件
 """
 
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, TimerAction
+from launch.actions import IncludeLaunchDescription, TimerAction, LogInfo
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
@@ -52,19 +52,43 @@ def generate_launch_description():
     )
     
     # ═══════════════════════════════════════════════════════════
-    # 3. 延迟启动控制节点
+    # 4. 添加日志信息
     # ═══════════════════════════════════════════════════════════
-    # 等待5秒，确保MoveGroup服务完全就绪
-    # 这样可以避免控制节点启动时找不到MoveGroup服务
+    log_start = LogInfo(
+        msg='\n' + '='*60 + \
+            '\n  🤖 Panda机械臂控制演示 - 启动中...' + \
+            '\n' + '='*60
+    )
+    
+    log_moveit_starting = LogInfo(
+        msg='[步骤 1/3] 🚀 正在启动 MoveIt 2 仿真环境...\n' + \
+            '           - RViz2 可视化界面\n' + \
+            '           - MoveGroup 运动规划服务\n' + \
+            '           - ros2_control 仿真器'
+    )
+    
+    log_waiting = LogInfo(
+        msg='[步骤 2/3] ⏳ 等待 5 秒，确保 MoveGroup 服务完全就绪...'
+    )
+    
+    log_controller_starting = LogInfo(
+        msg='[步骤 3/3] 🎯 启动机械臂位置控制节点...\n' + \
+            '           节点将自动执行演示动作序列！'
+    )
+    
+    # 将日志添加到延迟启动序列中
     delayed_arm_controller = TimerAction(
         period=5.0,  # 延迟5秒
-        actions=[arm_controller]
+        actions=[log_controller_starting, arm_controller]
     )
     
     # ═══════════════════════════════════════════════════════════
-    # 4. 组装Launch描述
+    # 5. 组装Launch描述
     # ═══════════════════════════════════════════════════════════
     return LaunchDescription([
-        moveit_demo,           # 先启动仿真环境
-        delayed_arm_controller # 延迟启动控制节点
+        log_start,              # 欢迎信息
+        log_moveit_starting,    # 提示启动仿真环境
+        moveit_demo,            # 启动仿真环境
+        log_waiting,            # 提示等待中
+        delayed_arm_controller  # 延迟启动控制节点（带日志）
     ])
