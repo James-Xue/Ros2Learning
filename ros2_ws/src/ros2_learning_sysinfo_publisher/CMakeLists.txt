@@ -12,8 +12,17 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 
+# 构建可执行文件（多个源文件）
 add_executable(sysinfo_publisher
-  src/sysinfo_publisher.cpp
+  src/main.cpp
+  src/sysinfo_publisher_node.cpp
+  src/system_reader.cpp
+)
+
+# 添加 include 目录
+target_include_directories(sysinfo_publisher PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 ament_target_dependencies(sysinfo_publisher
@@ -21,9 +30,15 @@ ament_target_dependencies(sysinfo_publisher
   std_msgs
 )
 
+# 安装可执行文件
 install(TARGETS
   sysinfo_publisher
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# 安装头文件
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 ament_package()
