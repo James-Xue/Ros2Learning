@@ -110,10 +110,10 @@ QString to_pretty_view(const QString &raw)
                 static_cast<qulonglong>(n.value("rx_bytes").toDouble()));
             const QString tx = QString::number(
                 static_cast<qulonglong>(n.value("tx_bytes").toDouble()));
-            summary += QString("  %-20s %15s %15s\n")
-                           .arg(iface.toStdString().c_str())
-                           .arg(rx)
-                           .arg(tx);
+            summary += QString("  %1 %2 %3\n")
+                           .arg(iface.leftJustified(20, ' '))
+                           .arg(rx.rightJustified(15, ' '))
+                           .arg(tx.rightJustified(15, ' '));
         }
     }
 
