@@ -16,6 +16,12 @@
   <build_depend>qtbase5-dev</build_depend>
   <exec_depend>qtbase5-dev</exec_depend>
 
+  <!-- Launch 依赖 -->
+  <exec_depend>ros2launch</exec_depend>
+  
+  <!-- 系统信息发布器依赖 -->
+  <exec_depend>ros2_learning_sysinfo_publisher</exec_depend>
+
   <export>
     <build_type>ament_cmake</build_type>
   </export>

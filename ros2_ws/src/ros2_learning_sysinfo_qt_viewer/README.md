@@ -47,6 +47,8 @@ ros2_learning_sysinfo_qt_viewer/
 │   ├── json_formatter.cpp      # 格式化实现
 │   ├── sysinfo_qt_node.cpp     # 节点实现
 │   └── main.cpp                # 主入口（事件循环集成）
+├── launch/
+│   └── sysinfo_monitor.launch.py  # 一键启动 launch 文件
 ├── CMakeLists.txt
 ├── package.xml
 └── README.md
@@ -88,9 +90,25 @@ source install/setup.bash
 
 ## 📖 使用方法
 
-### 基本用法
+### 🚀 一键启动（推荐）
 
-**步骤 1**: 启动系统信息发布器（如果有）
+使用 launch 文件同时启动发布器和查看器：
+
+```bash
+ros2 launch ros2_learning_sysinfo_qt_viewer sysinfo_monitor.launch.py
+```
+
+这将自动启动：
+- ✅ 系统信息发布器（1Hz）
+- ✅ Qt 监控界面
+
+按 `Ctrl+C` 关闭所有节点。
+
+---
+
+### 手动分步启动
+
+**步骤 1**: 启动系统信息发布器
 
 ```bash
 ros2 run ros2_learning_sysinfo_publisher sysinfo_publisher
