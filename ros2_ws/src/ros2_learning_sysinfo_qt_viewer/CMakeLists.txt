@@ -21,8 +21,17 @@ else()
   set(QT_WIDGETS_LIB Qt5::Widgets)
 endif()
 
+# 构建可执行文件（多个源文件）
 add_executable(sysinfo_qt_viewer
-  src/sysinfo_qt_viewer.cpp
+  src/main.cpp
+  src/sysinfo_qt_node.cpp
+  src/json_formatter.cpp
+)
+
+# 添加 include 目录
+target_include_directories(sysinfo_qt_viewer PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
 )
 
 target_link_libraries(sysinfo_qt_viewer
@@ -34,9 +43,15 @@ ament_target_dependencies(sysinfo_qt_viewer
   std_msgs
 )
 
+# 安装可执行文件
 install(TARGETS
   sysinfo_qt_viewer
   DESTINATION lib/${PROJECT_NAME}
+)
+
+# 安装头文件
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 ament_package()
