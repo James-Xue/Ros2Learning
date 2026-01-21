@@ -59,7 +59,7 @@ void TFListenerDemo::lookupTransforms() {
     try {
         geometry_msgs::msg::PointStamped point_in_sensor;
         point_in_sensor.header.frame_id = "sensor_frame";
-        point_in_sensor.header.stamp = this->get_clock()->now();
+        point_in_sensor.header.stamp = rclcpp::Time(0);  // 使用最新可用的 TF 数据
         point_in_sensor.point.x = 1.0;
         point_in_sensor.point.y = 0.0;
         point_in_sensor.point.z = 0.0;
