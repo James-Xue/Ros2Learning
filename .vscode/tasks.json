@@ -37,7 +37,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_nav2_client ros2_learning_turtlebot3_teleop ros2_learning_task_runner --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_nav2_client ros2_learning_turtlebot3_teleop ros2_learning_task_runner ros2_learning_sysinfo_publisher --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
             "problemMatcher": [],
             "group": {
@@ -147,7 +147,7 @@
             "command": "bash",
             "args": [
                 "-lc",
-                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_nav2_client ros2_learning_task_runner --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && colcon build --symlink-install --packages-select ros2_learning_cpp ros2_learning_nav2_client ros2_learning_task_runner ros2_learning_sysinfo_publisher --cmake-force-configure --cmake-args -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
             "problemMatcher": [],
             "group": "build"
