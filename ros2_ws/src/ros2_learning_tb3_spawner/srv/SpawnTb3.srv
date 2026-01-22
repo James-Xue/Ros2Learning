@@ -1,0 +1,20 @@
+# Request
+# Spawn a new TurtleBot3 entity into Gazebo at the given pose.
+
+# Entity name in Gazebo. If empty, a unique name will be generated.
+string name
+
+# TurtleBot3 model. If empty, will use env TURTLEBOT3_MODEL, otherwise node parameter default_model.
+# Common values: burger, waffle, waffle_pi
+string model
+
+# Pose in the Gazebo world frame.
+float64 x
+float64 y
+float64 z
+float64 yaw
+
+---
+# Response
+bool success
+string message

@@ -464,6 +464,42 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
 ```
 
+### 在同一世界里再生成一台 TurtleBot3（Service 方式）
+
+本仓库提供包 `ros2_learning_tb3_spawner`：启动一个 Service 服务器，通过调用服务在 Gazebo 世界中生成第二台 TurtleBot3。
+
+终端 A：启动仿真世界（示例：waffle_pi）
+
+```bash
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch turtlebot3_gazebo turtlebot3_world.launch.py
+```
+
+终端 B：启动 spawner 节点（本仓库）
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 run ros2_learning_tb3_spawner tb3_spawner
+```
+
+终端 C：调用服务生成第二台机器人
+
+```bash
+cd Ros2Learning/ros2_ws
+source ./scripts/source.sh jazzy
+ros2 service call /spawn_tb3 ros2_learning_tb3_spawner/srv/SpawnTb3 "{name: 'tb3_2', model: 'waffle_pi', x: 1.0, y: 0.0, z: 0.01, yaw: 0.0}"
+```
+
+提示：`turtlebot3_gazebo` 在 Jazzy 默认使用 Gazebo Sim（`ros_gz_sim`），生成实体对应的底层服务通常是 `/world/default/create`。
+
+一键方式（推荐先用这个验证）：
+
+```bash
+export TURTLEBOT3_MODEL=waffle_pi
+ros2 launch ros2_learning_tb3_spawner tb3_two_robots.launch.py model:=waffle_pi second_name:=tb3_2 second_x:=1.0 second_y:=0.0 second_yaw:=0.0
+```
+
 2.1) 如果你的 OpenGL/显卡驱动导致 Gazebo 黑屏或崩溃，可用软件渲染方式启动（保留备用）：
 
 ```bash
