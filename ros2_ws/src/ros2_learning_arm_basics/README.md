@@ -11,6 +11,9 @@ ROS2机械臂控制基础学习包 - 使用MoveIt 2控制Panda机械臂
 - ✅ 移动到预定义姿态（named targets）
 - ✅ 笛卡尔空间位置控制
 - ✅ 关节角度直接控制
+- ✅ 笛卡尔路径规划（画正方形演示）
+- ✅ **夹爪控制**（打开/闭合/自定义宽度）
+- ✅ **抓取和放置演示**（完整的机械臂+夹爪协同控制）
 - ✅ 自动演示序列
 - ✅ 详细的中文注释
 
@@ -59,7 +62,9 @@ ros2 launch ros2_learning_arm_basics demo.launch.py
 - ✅ 启动 MoveIt 2 仿真环境
 - ✅ 打开 RViz2 可视化界面
 - ✅ 启动机械臂控制节点
-- ✅ 执行演示动作序列
+- ✅ 执行基础动作演示
+- ✅ 执行笛卡尔路径演示（画正方形）
+- ✅ **执行夹爪抓取和放置演示**
 
 ### 3. 手动启动（可选）
 
@@ -125,6 +130,24 @@ moveToPose(target_pose);
 ```cpp
 std::vector<double> joint_values = {0.0, -0.785, 0.0, -2.356, 0.0, 1.571, 0.785};
 moveJoints(joint_values);
+```
+
+### 夹爪控制
+```cpp
+// 打开夹爪（3.5cm）
+openGripper();
+
+// 闭合夹爪
+closeGripper();
+
+// 设置自定义宽度（2cm）
+setGripperWidth(0.02);
+```
+
+### 完整抓取序列
+```cpp
+// 运行完整的抓取和放置演示
+runPickAndPlaceDemo();
 ```
 
 ## 🔧 常见问题

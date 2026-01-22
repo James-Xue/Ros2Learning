@@ -27,6 +27,12 @@ int main(int argc, char** argv) {
         return 1;
     }
     
+    // 初始化夹爪控制接口
+    if (!node->initializeGripper()) {
+        RCLCPP_ERROR(node->get_logger(), "夹爪初始化失败");
+        return 1;
+    }
+    
     // 运行基础演示
     RCLCPP_INFO(node->get_logger(), "========== 基础演示 ==========");
     node->runDemo();
@@ -36,6 +42,12 @@ int main(int argc, char** argv) {
     // 运行正方形演示
     RCLCPP_INFO(node->get_logger(), "\n========== 笛卡尔路径演示 ==========");
     node->drawSquare();
+    
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    
+    // 运行抓取和放置演示
+    RCLCPP_INFO(node->get_logger(), "\n========== 夹爪控制演示 ==========");
+    node->runPickAndPlaceDemo();
     
     // 演示完成，退出（不需要spin）
     RCLCPP_INFO(node->get_logger(), "\n所有演示完成，程序退出");

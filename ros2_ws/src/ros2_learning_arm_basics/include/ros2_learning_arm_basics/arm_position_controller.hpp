@@ -87,10 +87,56 @@ public:
      * 使用笛卡尔路径规划让末端沿正方形路径运动
      */
     void drawSquare();
+    
+    // ═════════════════════════════════════════
+    // 夹爪控制方法
+    // ═════════════════════════════════════════
+    
+    /**
+     * @brief 初始化夹爪控制接口
+     * 
+     * 创建"hand"规划组的MoveGroup接口
+     * 
+     * @return true 初始化成功
+     * @return false 初始化失败
+     */
+    bool initializeGripper();
+    
+    /**
+     * @brief 打开夹爪
+     * 
+     * 移动到预定义的"open"姿态（3.5cm宽度）
+     */
+    void openGripper();
+    
+    /**
+     * @brief 闭合夹爪
+     * 
+     * 移动到预定义的"close"姿态（完全闭合）
+     */
+    void closeGripper();
+    
+    /**
+     * @brief 设置夹爪宽度
+     * 
+     * @param width 夹爪宽度（单位：米，范围：0.0 ~ 0.08）
+     */
+    void setGripperWidth(double width);
+    
+    /**
+     * @brief 抓取和放置演示
+     * 
+     * 完整的抓取序列：移动到物体上方 → 下降 → 闭合夹爪 → 
+     * 提升 → 移动到放置位置 → 打开夹爪
+     */
+    void runPickAndPlaceDemo();
 
 private:
-    /// MoveIt规划接口
+    /// 机械臂MoveIt规划接口
     std::shared_ptr<MoveGroup> m_moveGroup;
+    
+    /// 夹爪MoveIt规划接口
+    std::shared_ptr<MoveGroup> m_gripperMoveGroup;
     
     /// 日志记录器
     rclcpp::Logger m_logger;

@@ -289,3 +289,203 @@ void ArmPositionController::drawSquare() {
     RCLCPP_INFO(m_logger, "  正方形演示完成！");
     RCLCPP_INFO(m_logger, "========================================\n");
 }
+
+// ═══════════════════════════════════════════════════════════
+// 夹爪控制方法实现
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * @brief 初始化夹爪控制接口
+ * 
+ * 创建"hand"规划组的MoveGroup接口
+ */
+bool ArmPositionController::initializeGripper() {
+    try {
+        // 创建夹爪MoveGroup接口
+        m_gripperMoveGroup = std::make_shared<MoveGroup>(
+            shared_from_this(), "hand");
+        
+        RCLCPP_INFO(m_logger, "\n========================================");
+        RCLCPP_INFO(m_logger, "  夹爪控制接口初始化");
+        RCLCPP_INFO(m_logger, "========================================");
+        RCLCPP_INFO(m_logger, "规划组: %s", m_gripperMoveGroup->getPlanningFrame().c_str());
+        RCLCPP_INFO(m_logger, "末端执行器: hand");
+        RCLCPP_INFO(m_logger, "可用的预定义姿态: open, close");
+        RCLCPP_INFO(m_logger, "========================================\n");
+        
+        return true;
+    } catch (const std::exception& e) {
+        RCLCPP_ERROR(m_logger, "夹爪初始化失败: %s", e.what());
+        return false;
+    }
+}
+
+/**
+ * @brief 打开夹爪
+ * 
+ * 移动到预定义的"open"姿态（3.5cm宽度）
+ */
+void ArmPositionController::openGripper() {
+    RCLCPP_INFO(m_logger, "正在打开夹爪...");
+    
+    // 设置目标为预定义的"open"姿态
+    m_gripperMoveGroup->setNamedTarget("open");
+    
+    // 执行运动
+    auto success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
+    
+    if (success) {
+        RCLCPP_INFO(m_logger, "✓ 夹爪已打开（宽度: 3.5cm）");
+    } else {
+        RCLCPP_WARN(m_logger, "✗ 打开夹爪失败");
+    }
+    
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
+}
+
+/**
+ * @brief 闭合夹爪
+ * 
+ * 移动到预定义的"close"姿态（完全闭合）
+ */
+void ArmPositionController::closeGripper() {
+    RCLCPP_INFO(m_logger, "正在闭合夹爪...");
+    
+    // 设置目标为预定义的"close"姿态
+    m_gripperMoveGroup->setNamedTarget("close");
+    
+    // 执行运动
+    auto success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
+    
+    if (success) {
+        RCLCPP_INFO(m_logger, "✓ 夹爪已闭合");
+    } else {
+        RCLCPP_WARN(m_logger, "✗ 闭合夹爪失败");
+    }
+    
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
+}
+
+/**
+ * @brief 设置夹爪宽度
+ * 
+ * @param width 夹爪宽度（单位：米，范围：0.0 ~ 0.08）
+ */
+void ArmPositionController::setGripperWidth(double width) {
+    // 限制范围
+    if (width < 0.0) width = 0.0;
+    if (width > 0.08) width = 0.08;
+    
+    RCLCPP_INFO(m_logger, "正在设置夹爪宽度: %.3f m (%.1f cm)", 
+                width, width * 100.0);
+    
+    // Panda夹爪有两个关节，每个关节控制一个手指
+    // 每个手指移动 width/2 的距离
+    std::vector<double> joint_values = {width / 2.0, width / 2.0};
+    
+    m_gripperMoveGroup->setJointValueTarget(joint_values);
+    
+    auto success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
+    
+    if (success) {
+        RCLCPP_INFO(m_logger, "✓ 夹爪宽度已设置");
+    } else {
+        RCLCPP_WARN(m_logger, "✗ 设置夹爪宽度失败");
+    }
+    
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
+}
+
+/**
+ * @brief 抓取和放置演示
+ * 
+ * 完整的抓取序列演示
+ */
+void ArmPositionController::runPickAndPlaceDemo() {
+    RCLCPP_INFO(m_logger, "\n╔════════════════════════════════════════╗");
+    RCLCPP_INFO(m_logger, "║  🤖 抓取和放置演示                    ║");
+    RCLCPP_INFO(m_logger, "╚════════════════════════════════════════╝\n");
+    
+    // ═══════════════════════════════════════
+    // 步骤1: 移动到物体上方（准备位置）
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "[1/7] 移动到物体上方");
+    
+    Pose above_object;
+    above_object.orientation.w = 1.0;
+    above_object.position.x = 0.4;   // 前方40cm
+    above_object.position.y = 0.0;   // 中央
+    above_object.position.z = 0.4;   // 上方40cm
+    
+    moveToPose(above_object);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤2: 打开夹爪
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[2/7] 打开夹爪准备抓取");
+    openGripper();
+    
+    // ═══════════════════════════════════════
+    // 步骤3: 下降到抓取位置
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[3/7] 下降到抓取位置");
+    
+    Pose grasp_pose = above_object;
+    grasp_pose.position.z = 0.2;  // 下降到20cm高度
+    
+    moveToPose(grasp_pose);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤4: 闭合夹爪（模拟抓取物体）
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[4/7] 闭合夹爪抓取物体");
+    setGripperWidth(0.02);  // 设置为2cm（模拟抓取小物体）
+    RCLCPP_INFO(m_logger, "✓ 物体已抓取！");
+    
+    // ═══════════════════════════════════════
+    // 步骤5: 提升物体
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[5/7] 提升物体");
+    
+    Pose lift_pose = grasp_pose;
+    lift_pose.position.z = 0.5;  // 提升到50cm高度
+    
+    moveToPose(lift_pose);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤6: 移动到放置位置
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[6/7] 移动到放置位置");
+    
+    Pose place_pose;
+    place_pose.orientation.w = 1.0;
+    place_pose.position.x = 0.4;
+    place_pose.position.y = -0.3;  // 移动到右侧30cm
+    place_pose.position.z = 0.3;   // 放置高度30cm
+    
+    moveToPose(place_pose);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤7: 打开夹爪释放物体
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[7/7] 打开夹爪释放物体");
+    openGripper();
+    RCLCPP_INFO(m_logger, "✓ 物体已放置！");
+    
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 完成：返回ready姿态
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[完成] 返回ready姿态");
+    moveToNamedTarget("ready");
+    
+    RCLCPP_INFO(m_logger, "\n╔════════════════════════════════════════╗");
+    RCLCPP_INFO(m_logger, "║  ✅ 抓取和放置演示完成！              ║");
+    RCLCPP_INFO(m_logger, "╚════════════════════════════════════════╝\n");
+}
+
