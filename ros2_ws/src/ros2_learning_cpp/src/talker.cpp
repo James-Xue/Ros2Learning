@@ -6,6 +6,7 @@ TalkerNode::TalkerNode()
         : rclcpp::Node("talker")
 {
     publisher_ = create_publisher<std_msgs::msg::String>("chatter", 10);
+    m_publisher = create_publisher<std_msgs::msg::String>("chatter", 10);
     timer_ = create_wall_timer(500ms, std::bind(&TalkerNode::on_timer, this));
     RCLCPP_INFO(get_logger(), "talker started");
 }
@@ -16,4 +17,6 @@ void TalkerNode::on_timer()
     msg.data = "Hello ROS 2, count=" + std::to_string(count_++);
     RCLCPP_INFO(get_logger(), "Publishing: '%s'", msg.data.c_str());
     publisher_->publish(msg);
+    msg.data = "hhhh,Hello ROS 2, count=" + std::to_string(count_++);
+    m_publisher->publish(msg);
 }

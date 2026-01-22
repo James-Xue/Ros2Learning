@@ -16,6 +16,7 @@ class TalkerNode : public rclcpp::Node
     void on_timer();
 
     rclcpp::Publisher<std_msgs::msg::String>::SharedPtr publisher_;
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr m_publisher;
     rclcpp::TimerBase::SharedPtr timer_;
     size_t count_{0};
 };
