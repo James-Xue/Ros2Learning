@@ -636,7 +636,11 @@ void ArmPositionController::runRealisticPickAndPlace() {
     RCLCPP_INFO(m_logger, "[2/9] 移动到物体上方");
     
     Pose above_object;
-    above_object.orientation.w = 1.0;
+    // 设置夹爪朝向：绕 Y 轴旋转 180 度，使夹爪朝下
+    above_object.orientation.x = 1.0;
+    above_object.orientation.y = 0.0;
+    above_object.orientation.z = 0.0;
+    above_object.orientation.w = 0.0;
     above_object.position.x = 0.4;   // 前方40cm
     above_object.position.y = 0.0;   // 中央
     above_object.position.z = 0.4;   // 上方40cm
