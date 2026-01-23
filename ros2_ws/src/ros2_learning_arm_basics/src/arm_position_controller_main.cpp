@@ -34,20 +34,20 @@ int main(int argc, char** argv) {
     }
     
     // 运行基础演示
-    RCLCPP_INFO(node->get_logger(), "========== 基础演示 ==========");
-    node->runDemo();
+    //RCLCPP_INFO(node->get_logger(), "========== 基础演示 ==========");
+    //node->runDemo();
     
-    rclcpp::sleep_for(std::chrono::seconds(2));
+    //rclcpp::sleep_for(std::chrono::seconds(2));
     
     // 运行正方形演示
-    RCLCPP_INFO(node->get_logger(), "\n========== 笛卡尔路径演示 ==========");
-    node->drawSquare();
+    //RCLCPP_INFO(node->get_logger(), "\n========== 笛卡尔路径演示 ==========");
+    //node->drawSquare();
     
-    rclcpp::sleep_for(std::chrono::seconds(2));
+    //rclcpp::sleep_for(std::chrono::seconds(2));
     
     // 运行抓取和放置演示
-    RCLCPP_INFO(node->get_logger(), "\n========== 夹爪控制演示 ==========");
-    node->runPickAndPlaceDemo();
+    //RCLCPP_INFO(node->get_logger(), "\n========== 夹爪控制演示 ==========");
+    //node->runPickAndPlaceDemo();
     
     rclcpp::sleep_for(std::chrono::seconds(2));
     
