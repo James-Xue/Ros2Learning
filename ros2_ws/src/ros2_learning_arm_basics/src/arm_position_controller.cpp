@@ -656,7 +656,7 @@ void ArmPositionController::runRealisticPickAndPlace() {
     RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
     
     Pose grasp_pose = above_object;
-    grasp_pose.position.z = 0.05;  // 下降到物体高度（5cm）
+    grasp_pose.position.z = 0.025;  // 下降到物体中心高度（2.5cm）
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
@@ -665,7 +665,7 @@ void ArmPositionController::runRealisticPickAndPlace() {
     // 步骤5: 闭合夹爪
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "\n[5/9] 闭合夹爪");
-    setGripperWidth(0.04);  // 设置为4cm（略小于5cm的物体）
+    setGripperWidth(0.045);  // 设置为4.5cm（略小于5cm，确保接触）
     
     // ═══════════════════════════════════════
     // 步骤6: 将物体附加到夹爪（关键步骤！）
