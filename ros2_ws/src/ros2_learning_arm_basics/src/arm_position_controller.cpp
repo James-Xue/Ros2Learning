@@ -664,9 +664,9 @@ void ArmPositionController::runRealisticPickAndPlace() {
     RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
     
     Pose grasp_pose = above_object;
-    // 现在末端执行器是 panda_hand（夹爪手掌中心）
-    // 可以直接下降到物体中心高度附近
-    grasp_pose.position.z = 0.05;  // 稍高于物体中心（2.5cm），留有余地
+    // 进一步降低高度，确保手指能接触物体
+    // 物体中心在 2.5cm，设置略低以确保接触
+    grasp_pose.position.z = 0.02;  // 2cm 高度，略低于物体中心
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
