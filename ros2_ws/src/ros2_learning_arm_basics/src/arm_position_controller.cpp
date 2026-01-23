@@ -660,7 +660,9 @@ void ArmPositionController::runRealisticPickAndPlace() {
     RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
     
     Pose grasp_pose = above_object;
-    grasp_pose.position.z = 0.025;  // 下降到物体中心高度（2.5cm）
+    // 考虑夹爪几何形状：panda_hand TCP 到手指尖端约 10cm
+    // 物体中心在 2.5cm，需要 TCP 下降到更高位置才能让手指接触物体
+    grasp_pose.position.z = 0.13;  // TCP 在 13cm 高度，手指尖端在约 3cm
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
