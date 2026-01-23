@@ -512,57 +512,85 @@ void ArmPositionController::runPickAndPlaceDemo() {
 void ArmPositionController::spawnTargetObject() {
     RCLCPP_INFO(m_logger, "\n🎁 正在在场景中生成目标物体...");
     
-    // 创建碰撞物体
-    moveit_msgs::msg::CollisionObject collision_object;
-    collision_object.header.frame_id = "panda_link0";  // 基座坐标系
-    collision_object.id = "target_box";
+    std::vector<moveit_msgs::msg::CollisionObject> collision_objects;
     
-    // 定义立方体形状
-    shape_msgs::msg::SolidPrimitive primitive;
-    primitive.type = primitive.BOX;
-    primitive.dimensions.resize(3);
-    primitive.dimensions[0] = 0.05;  // x: 5cm
-    primitive.dimensions[1] = 0.05;  // y: 5cm
-    primitive.dimensions[2] = 0.05;  // z: 5cm
+    // ========================================
+    // 1. 创建桌面碰撞物体
+    // ========================================
+    moveit_msgs::msg::CollisionObject table;
+    table.header.frame_id = "panda_link0";
+    table.id = "table";
     
-    // 定义物体位置（在机械臂前方，桌面上）
+    shape_msgs::msg::SolidPrimitive table_primitive;
+    table_primitive.type = table_primitive.BOX;
+    table_primitive.dimensions.resize(3);
+    table_primitive.dimensions[0] = 0.6;  // x: 60cm
+    table_primitive.dimensions[1] = 0.8;  // y: 80cm  
+    table_primitive.dimensions[2] = 0.02; // z: 2cm (桌面厚度)
+    
+    geometry_msgs::msg::Pose table_pose;
+    table_pose.position.x = 0.4;
+    table_pose.position.y = 0.0;
+    table_pose.position.z = -0.01;  // 桌面中心在 -1cm，顶面在 z=0
+    table_pose.orientation.w = 1.0;
+    
+    table.primitives.push_back(table_primitive);
+    table.primitive_poses.push_back(table_pose);
+    table.operation = table.ADD;
+    collision_objects.push_back(table);
+    
+    // ========================================
+    // 2. 创建目标物体（放在桌面上）
+    // ========================================
+    moveit_msgs::msg::CollisionObject target_box;
+    target_box.header.frame_id = "panda_link0";
+    target_box.id = "target_box";
+    
+    shape_msgs::msg::SolidPrimitive box_primitive;
+    box_primitive.type = box_primitive.BOX;
+    box_primitive.dimensions.resize(3);
+    box_primitive.dimensions[0] = 0.05;  // x: 5cm
+    box_primitive.dimensions[1] = 0.05;  // y: 5cm
+    box_primitive.dimensions[2] = 0.05;  // z: 5cm
+    
     geometry_msgs::msg::Pose box_pose;
     box_pose.position.x = 0.4;   // 前方40cm
     box_pose.position.y = 0.0;   // 中央
-    box_pose.position.z = 0.025; // 桌面高度（立方体一半高度）
+    box_pose.position.z = 0.025; // 桌面上方 2.5cm（立方体一半高度）
     box_pose.orientation.w = 1.0;
     
-    collision_object.primitives.push_back(primitive);
-    collision_object.primitive_poses.push_back(box_pose);
-    collision_object.operation = collision_object.ADD;
+    target_box.primitives.push_back(box_primitive);
+    target_box.primitive_poses.push_back(box_pose);
+    target_box.operation = target_box.ADD;
+    collision_objects.push_back(target_box);
     
-    // 添加到场景
-    m_planningSceneInterface->applyCollisionObject(collision_object);
+    // 添加所有物体到场景
+    m_planningSceneInterface->applyCollisionObjects(collision_objects);
     
-    // 等待场景更新
     rclcpp::sleep_for(std::chrono::milliseconds(500));
     
-    RCLCPP_INFO(m_logger, "✓ 目标物体已生成");
-    RCLCPP_INFO(m_logger, "  - 形状: 5cm × 5cm × 5cm 立方体");
-    RCLCPP_INFO(m_logger, "  - 位置: (%.2f, %.2f, %.2f)", 
+    RCLCPP_INFO(m_logger, "✓ 场景物体已生成");
+    RCLCPP_INFO(m_logger, "  - 桌面: 60cm × 80cm × 2cm (顶面在 z=0)");
+    RCLCPP_INFO(m_logger, "  - 物体: 5cm × 5cm × 5cm");
+    RCLCPP_INFO(m_logger, "  - 位置: (%.2f, %.2f, %.2f)\n", 
                 box_pose.position.x, box_pose.position.y, box_pose.position.z);
-    RCLCPP_INFO(m_logger, "  - ID: target_box\n");
 }
 
 /**
  * @brief 从场景中移除目标物体
  */
 void ArmPositionController::removeTargetObject() {
-    RCLCPP_INFO(m_logger, "正在移除目标物体...");
+    RCLCPP_INFO(m_logger, "正在移除场景物体...");
     
     std::vector<std::string> object_ids;
     object_ids.push_back("target_box");
+    object_ids.push_back("table");  // 也移除桌面
     
     m_planningSceneInterface->removeCollisionObjects(object_ids);
     
     rclcpp::sleep_for(std::chrono::milliseconds(300));
     
-    RCLCPP_INFO(m_logger, "✓ 目标物体已移除\n");
+    RCLCPP_INFO(m_logger, "✓ 场景物体已移除\n");
 }
 
 /**
