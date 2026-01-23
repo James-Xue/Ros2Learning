@@ -33,7 +33,10 @@ ament_target_dependencies(tb3_spawner
   ament_index_cpp
 )
 
-rosidl_target_interfaces(tb3_spawner ${PROJECT_NAME} "rosidl_typesupport_cpp")
+# 使用新的 rosidl typesupport API（替代已弃用的 rosidl_target_interfaces）
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
+target_link_libraries(tb3_spawner "${cpp_typesupport_target}")
 
 install(TARGETS
   tb3_spawner

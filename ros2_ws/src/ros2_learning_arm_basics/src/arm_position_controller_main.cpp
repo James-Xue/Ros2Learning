@@ -49,6 +49,12 @@ int main(int argc, char** argv) {
     RCLCPP_INFO(node->get_logger(), "\n========== 夹爪控制演示 ==========");
     node->runPickAndPlaceDemo();
     
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    
+    // 运行真实物体抓取演示
+    RCLCPP_INFO(node->get_logger(), "\n========== 真实物体抓取演示 ==========");
+    node->runRealisticPickAndPlace();
+    
     // 演示完成，退出（不需要spin）
     RCLCPP_INFO(node->get_logger(), "\n所有演示完成，程序退出");
     // rclcpp::spin(node);  // 去掉spin，演示后自动退出

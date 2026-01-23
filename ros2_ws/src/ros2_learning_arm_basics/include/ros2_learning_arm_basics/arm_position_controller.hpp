@@ -9,6 +9,7 @@
 
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
+#include <moveit/planning_scene_interface/planning_scene_interface.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 
 // ═══════════════════════════════════════
@@ -130,6 +131,47 @@ public:
      * 提升 → 移动到放置位置 → 打开夹爪
      */
     void runPickAndPlaceDemo();
+    
+    // ═════════════════════════════════════════
+    // 物体管理和真实抓取方法
+    // ═════════════════════════════════════════
+    
+    /**
+     * @brief 在场景中生成目标物体
+     * 
+     * 在机械臂前方(0.4, 0.0, 0.025)位置生成5cm立方体
+     */
+    void spawnTargetObject();
+    
+    /**
+     * @brief 从场景中移除目标物体
+     */
+    void removeTargetObject();
+    
+    /**
+     * @brief 将物体附加到夹爪
+     * 
+     * 实现物理附加，物体将跟随夹爪移动
+     * 
+     * @param object_id 物体ID
+     */
+    void attachObjectToGripper(const std::string& object_id);
+    
+    /**
+     * @brief 从夹爪分离物体
+     * 
+     * 物体将留在当前位置
+     * 
+     * @param object_id 物体ID
+     */
+    void detachObjectFromGripper(const std::string& object_id);
+    
+    /**
+     * @brief 真实的抓取和放置演示
+     * 
+     * 包含物体生成、附加、分离的完整流程
+     */
+    void runRealisticPickAndPlace();
 
 private:
     /// 机械臂MoveIt规划接口
@@ -137,6 +179,9 @@ private:
     
     /// 夹爪MoveIt规划接口
     std::shared_ptr<MoveGroup> m_gripperMoveGroup;
+    
+    /// 规划场景接口（用于管理碰撞物体）
+    std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planningSceneInterface;
     
     /// 日志记录器
     rclcpp::Logger m_logger;

@@ -4,6 +4,9 @@
 
 #include <chrono>
 #include <string>
+#include <moveit_msgs/msg/collision_object.hpp>
+#include <moveit_msgs/msg/attached_collision_object.hpp>
+#include <shape_msgs/msg/solid_primitive.hpp>
 
 /**
  * @brief 构造函数
@@ -16,6 +19,10 @@ ArmPositionController::ArmPositionController()
       m_logger(this->get_logger())
 {
     RCLCPP_INFO(m_logger, "机械臂位置控制节点正在初始化...");
+    
+    // 创建规划场景接口
+    m_planningSceneInterface = 
+        std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
     
     // 注意：MoveGroupInterface需要在node初始化后才能创建
     // 这里我们在单独的初始化函数中完成
@@ -489,3 +496,234 @@ void ArmPositionController::runPickAndPlaceDemo() {
     RCLCPP_INFO(m_logger, "╚════════════════════════════════════════╝\n");
 }
 
+// ═══════════════════════════════════════════════════════════
+// 物体管理和真实抓取方法实现
+// ═══════════════════════════════════════════════════════════
+
+/**
+ * @brief 在场景中生成目标物体
+ * 
+ * 在机械臂前方生成一个5cm×5cm×5cm的立方体
+ */
+void ArmPositionController::spawnTargetObject() {
+    RCLCPP_INFO(m_logger, "\n🎁 正在在场景中生成目标物体...");
+    
+    // 创建碰撞物体
+    moveit_msgs::msg::CollisionObject collision_object;
+    collision_object.header.frame_id = "panda_link0";  // 基座坐标系
+    collision_object.id = "target_box";
+    
+    // 定义立方体形状
+    shape_msgs::msg::SolidPrimitive primitive;
+    primitive.type = primitive.BOX;
+    primitive.dimensions.resize(3);
+    primitive.dimensions[0] = 0.05;  // x: 5cm
+    primitive.dimensions[1] = 0.05;  // y: 5cm
+    primitive.dimensions[2] = 0.05;  // z: 5cm
+    
+    // 定义物体位置（在机械臂前方，桌面上）
+    geometry_msgs::msg::Pose box_pose;
+    box_pose.position.x = 0.4;   // 前方40cm
+    box_pose.position.y = 0.0;   // 中央
+    box_pose.position.z = 0.025; // 桌面高度（立方体一半高度）
+    box_pose.orientation.w = 1.0;
+    
+    collision_object.primitives.push_back(primitive);
+    collision_object.primitive_poses.push_back(box_pose);
+    collision_object.operation = collision_object.ADD;
+    
+    // 添加到场景
+    m_planningSceneInterface->applyCollisionObject(collision_object);
+    
+    // 等待场景更新
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    
+    RCLCPP_INFO(m_logger, "✓ 目标物体已生成");
+    RCLCPP_INFO(m_logger, "  - 形状: 5cm × 5cm × 5cm 立方体");
+    RCLCPP_INFO(m_logger, "  - 位置: (%.2f, %.2f, %.2f)", 
+                box_pose.position.x, box_pose.position.y, box_pose.position.z);
+    RCLCPP_INFO(m_logger, "  - ID: target_box\n");
+}
+
+/**
+ * @brief 从场景中移除目标物体
+ */
+void ArmPositionController::removeTargetObject() {
+    RCLCPP_INFO(m_logger, "正在移除目标物体...");
+    
+    std::vector<std::string> object_ids;
+    object_ids.push_back("target_box");
+    
+    m_planningSceneInterface->removeCollisionObjects(object_ids);
+    
+    rclcpp::sleep_for(std::chrono::milliseconds(300));
+    
+    RCLCPP_INFO(m_logger, "✓ 目标物体已移除\n");
+}
+
+/**
+ * @brief 将物体附加到夹爪
+ * 
+ * 实现物理附加，物体将跟随夹爪移动
+ */
+void ArmPositionController::attachObjectToGripper(const std::string& object_id) {
+    RCLCPP_INFO(m_logger, "🔗 正在将物体 '%s' 附加到夹爪...", object_id.c_str());
+    
+    // 创建附加碰撞物体消息
+    moveit_msgs::msg::AttachedCollisionObject attached_object;
+    attached_object.link_name = "panda_hand";  // 附加到夹爪链接
+    attached_object.object.id = object_id;
+    attached_object.object.operation = attached_object.object.ADD;
+    
+    // 指定允许接触的链接（避免碰撞检测误报）
+    attached_object.touch_links = std::vector<std::string>{
+        "panda_hand", 
+        "panda_leftfinger", 
+        "panda_rightfinger"
+    };
+    
+    // 应用附加
+    m_planningSceneInterface->applyAttachedCollisionObject(attached_object);
+    
+    rclcpp::sleep_for(std::chrono::milliseconds(300));
+    
+    RCLCPP_INFO(m_logger, "✓ 物体已附加到夹爪，将跟随夹爪移动\n");
+}
+
+/**
+ * @brief 从夹爪分离物体
+ * 
+ * 物体将留在当前位置
+ */
+void ArmPositionController::detachObjectFromGripper(const std::string& object_id) {
+    RCLCPP_INFO(m_logger, "🔓 正在从夹爪分离物体 '%s'...", object_id.c_str());
+    
+    // 创建分离消息
+    moveit_msgs::msg::AttachedCollisionObject detach_object;
+    detach_object.object.id = object_id;
+    detach_object.object.operation = detach_object.object.REMOVE;
+    
+    // 应用分离
+    m_planningSceneInterface->applyAttachedCollisionObject(detach_object);
+    
+    rclcpp::sleep_for(std::chrono::milliseconds(300));
+    
+    RCLCPP_INFO(m_logger, "✓ 物体已从夹爪分离，留在当前位置\n");
+}
+
+/**
+ * @brief 真实的抓取和放置演示
+ * 
+ * 包含物体生成、附加、分离的完整流程
+ */
+void ArmPositionController::runRealisticPickAndPlace() {
+    RCLCPP_INFO(m_logger, "\n╔════════════════════════════════════════════════╗");
+    RCLCPP_INFO(m_logger, "║  🎯 真实物体抓取和放置演示                    ║");
+    RCLCPP_INFO(m_logger, "╚════════════════════════════════════════════════╝\n");
+    
+    const std::string object_id = "target_box";
+    
+    // ═══════════════════════════════════════
+    // 步骤1: 生成目标物体
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "[1/9] 生成目标物体");
+    spawnTargetObject();
+    rclcpp::sleep_for(std::chrono::seconds(2));
+    
+    // ═══════════════════════════════════════
+    // 步骤2: 移动到物体上方（准备位置）
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "[2/9] 移动到物体上方");
+    
+    Pose above_object;
+    above_object.orientation.w = 1.0;
+    above_object.position.x = 0.4;   // 前方40cm
+    above_object.position.y = 0.0;   // 中央
+    above_object.position.z = 0.4;   // 上方40cm
+    
+    moveToPose(above_object);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤3: 打开夹爪
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[3/9] 打开夹爪准备抓取");
+    openGripper();
+    
+    // ═══════════════════════════════════════
+    // 步骤4: 下降到抓取位置
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
+    
+    Pose grasp_pose = above_object;
+    grasp_pose.position.z = 0.05;  // 下降到物体高度（5cm）
+    
+    moveToPose(grasp_pose);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤5: 闭合夹爪
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[5/9] 闭合夹爪");
+    setGripperWidth(0.04);  // 设置为4cm（略小于5cm的物体）
+    
+    // ═══════════════════════════════════════
+    // 步骤6: 将物体附加到夹爪（关键步骤！）
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[6/9] 附加物体到夹爪");
+    attachObjectToGripper(object_id);
+    RCLCPP_INFO(m_logger, "✓ 物体已被抓取！");
+    
+    // ═══════════════════════════════════════
+    // 步骤7: 提升物体
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[7/9] 提升物体");
+    
+    Pose lift_pose = grasp_pose;
+    lift_pose.position.z = 0.5;  // 提升到50cm高度
+    
+    moveToPose(lift_pose);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤8: 移动到放置位置
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[8/9] 移动到放置位置");
+    
+    Pose place_pose;
+    place_pose.orientation.w = 1.0;
+    place_pose.position.x = 0.4;
+    place_pose.position.y = -0.3;  // 移动到右侧30cm
+    place_pose.position.z = 0.3;   // 放置高度30cm
+    
+    moveToPose(place_pose);
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 步骤9: 分离物体并打开夹爪
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[9/9] 分离物体并打开夹爪");
+    
+    detachObjectFromGripper(object_id);
+    openGripper();
+    
+    RCLCPP_INFO(m_logger, "✓ 物体已放置！");
+    
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // ═══════════════════════════════════════
+    // 完成：返回ready姿态
+    // ═══════════════════════════════════════
+    RCLCPP_INFO(m_logger, "\n[完成] 返回ready姿态");
+    moveToNamedTarget("ready");
+    
+    rclcpp::sleep_for(std::chrono::seconds(1));
+    
+    // 清理：移除物体
+    RCLCPP_INFO(m_logger, "\n[清理] 移除场景中的物体");
+    removeTargetObject();
+    
+    RCLCPP_INFO(m_logger, "\n╔════════════════════════════════════════════════╗");
+    RCLCPP_INFO(m_logger, "║  ✅ 真实物体抓取演示完成！                    ║");
+    RCLCPP_INFO(m_logger, "╚════════════════════════════════════════════════╝\n");
+}
