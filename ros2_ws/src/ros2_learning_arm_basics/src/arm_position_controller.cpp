@@ -42,6 +42,10 @@ bool ArmPositionController::initialize(const std::string& planning_group) {
         m_moveGroup = std::make_shared<MoveGroup>(
             shared_from_this(), planning_group);
         
+        // 关键修复：设置末端执行器链接为 panda_hand
+        // panda_arm 默认使用 panda_link8（手腕），但我们需要控制夹爪位置
+        m_moveGroup->setEndEffectorLink("panda_hand");
+        
         RCLCPP_INFO(m_logger, "规划组: %s", planning_group.c_str());
         RCLCPP_INFO(m_logger, "规划框架: %s", m_moveGroup->getPlanningFrame().c_str());
         RCLCPP_INFO(m_logger, "末端执行器: %s", m_moveGroup->getEndEffectorLink().c_str());
@@ -660,9 +664,9 @@ void ArmPositionController::runRealisticPickAndPlace() {
     RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
     
     Pose grasp_pose = above_object;
-    // 考虑夹爪几何形状：panda_hand TCP 到手指尖端约 10cm
-    // 物体中心在 2.5cm，需要 TCP 下降到更高位置才能让手指接触物体
-    grasp_pose.position.z = 0.13;  // TCP 在 13cm 高度，手指尖端在约 3cm
+    // 现在末端执行器是 panda_hand（夹爪手掌中心）
+    // 可以直接下降到物体中心高度附近
+    grasp_pose.position.z = 0.05;  // 稍高于物体中心（2.5cm），留有余地
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
