@@ -8,6 +8,48 @@
 #include <moveit_msgs/msg/attached_collision_object.hpp>
 #include <shape_msgs/msg/solid_primitive.hpp>
 
+// ═══════════════════════════════════════════════════════════
+// 常量定义 - 将所有魔法数字提取为命名常量
+// ═══════════════════════════════════════════════════════════
+namespace constants {
+    // 夹爪参数
+    constexpr double kGripperMaxWidth = 0.08;        // 夹爪最大宽度 8cm
+    constexpr double kGripperOpenWidth = 0.035;      // 夹爪打开宽度 3.5cm
+    constexpr double kHandToFingertipOffset = 0.10;  // panda_hand原点到指尖的偏移量
+    
+    // 物体参数
+    constexpr double kTargetBoxSize = 0.05;          // 目标立方体边长 5cm
+    constexpr double kTableWidth = 0.6;              // 桌面宽度 60cm
+    constexpr double kTableDepth = 0.8;              // 桌面深度 80cm
+    constexpr double kTableThickness = 0.02;         // 桌面厚度 2cm
+    
+    // 位置参数
+    constexpr double kObjectDistance = 0.4;          // 物体前方距离 40cm
+    constexpr double kPrepareHeight = 0.35;          // 准备位置高度 35cm
+    constexpr double kGraspHeight = 0.13;            // 抓取高度（物体中心 + hand偏移）
+    constexpr double kLiftHeight = 0.5;              // 提升高度 50cm
+    constexpr double kPlaceHeight = 0.3;             // 放置高度 30cm
+    constexpr double kPlaceOffsetY = -0.3;           // 放置位置Y偏移 -30cm
+    
+    // 时间参数（毫秒）
+    constexpr int kShortDelay = 300;                 // 短延迟
+    constexpr int kMediumDelay = 500;                // 中等延迟
+    constexpr int kLongDelay = 1000;                 // 长延迟
+    
+    // 链接和物体名称
+    const std::string kGripperFrame = "panda_hand";
+    const std::string kBaseFrame = "panda_link0";
+    const std::string kTargetBoxId = "target_box";
+    const std::string kTableId = "table";
+    
+    // 夹爪相关链接
+    const std::vector<std::string> kGripperLinks = {
+        "panda_hand",
+        "panda_leftfinger", 
+        "panda_rightfinger"
+    };
+}  // namespace constants
+
 /**
  * @brief 构造函数
  * 
@@ -92,7 +134,7 @@ void ArmPositionController::moveToNamedTarget(const std::string& target_name) {
  * 
  * @param target_pose 目标位姿（位置+方向）
  */
-void ArmPositionController::moveToPose(const Pose& target_pose) {
+bool ArmPositionController::moveToPose(const Pose& target_pose) {
     RCLCPP_INFO(m_logger, "正在移动到笛卡尔空间目标位置");
     RCLCPP_INFO(m_logger, "  位置: [%.3f, %.3f, %.3f]", 
                 target_pose.position.x, 
@@ -104,7 +146,7 @@ void ArmPositionController::moveToPose(const Pose& target_pose) {
     
     // 规划运动路径
     Plan plan;
-    auto success = (m_moveGroup->plan(plan) == ErrorCode::SUCCESS);
+    bool success = (m_moveGroup->plan(plan) == ErrorCode::SUCCESS);
     
     if (success) {
         RCLCPP_INFO(m_logger, "规划成功，正在执行...");
@@ -112,6 +154,7 @@ void ArmPositionController::moveToPose(const Pose& target_pose) {
     } else {
         RCLCPP_WARN(m_logger, "规划失败");
     }
+    return success;
 }
 
 /**
@@ -340,22 +383,24 @@ bool ArmPositionController::initializeGripper() {
  * 
  * 移动到预定义的"open"姿态（3.5cm宽度）
  */
-void ArmPositionController::openGripper() {
+bool ArmPositionController::openGripper() {
     RCLCPP_INFO(m_logger, "正在打开夹爪...");
     
     // 设置目标为预定义的"open"姿态
     m_gripperMoveGroup->setNamedTarget("open");
     
     // 执行运动
-    auto success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
+    bool success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
     
     if (success) {
-        RCLCPP_INFO(m_logger, "✓ 夹爪已打开（宽度: 3.5cm）");
+        RCLCPP_INFO(m_logger, "✓ 夹爪已打开（宽度: %.1fcm）", 
+                    constants::kGripperOpenWidth * 100.0);
     } else {
         RCLCPP_WARN(m_logger, "✗ 打开夹爪失败");
     }
     
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    rclcpp::sleep_for(std::chrono::milliseconds(constants::kMediumDelay));
+    return success;
 }
 
 /**
@@ -363,14 +408,14 @@ void ArmPositionController::openGripper() {
  * 
  * 移动到预定义的"close"姿态（完全闭合）
  */
-void ArmPositionController::closeGripper() {
+bool ArmPositionController::closeGripper() {
     RCLCPP_INFO(m_logger, "正在闭合夹爪...");
     
     // 设置目标为预定义的"close"姿态
     m_gripperMoveGroup->setNamedTarget("close");
     
     // 执行运动
-    auto success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
+    bool success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
     
     if (success) {
         RCLCPP_INFO(m_logger, "✓ 夹爪已闭合");
@@ -378,7 +423,8 @@ void ArmPositionController::closeGripper() {
         RCLCPP_WARN(m_logger, "✗ 闭合夹爪失败");
     }
     
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    rclcpp::sleep_for(std::chrono::milliseconds(constants::kMediumDelay));
+    return success;
 }
 
 /**
@@ -386,10 +432,10 @@ void ArmPositionController::closeGripper() {
  * 
  * @param width 夹爪宽度（单位：米，范围：0.0 ~ 0.08）
  */
-void ArmPositionController::setGripperWidth(double width) {
-    // 限制范围
+bool ArmPositionController::setGripperWidth(double width) {
+    // 限制范围，使用常量
     if (width < 0.0) width = 0.0;
-    if (width > 0.08) width = 0.08;
+    if (width > constants::kGripperMaxWidth) width = constants::kGripperMaxWidth;
     
     RCLCPP_INFO(m_logger, "正在设置夹爪宽度: %.3f m (%.1f cm)", 
                 width, width * 100.0);
@@ -400,7 +446,7 @@ void ArmPositionController::setGripperWidth(double width) {
     
     m_gripperMoveGroup->setJointValueTarget(joint_values);
     
-    auto success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
+    bool success = (m_gripperMoveGroup->move() == ErrorCode::SUCCESS);
     
     if (success) {
         RCLCPP_INFO(m_logger, "✓ 夹爪宽度已设置");
@@ -408,100 +454,8 @@ void ArmPositionController::setGripperWidth(double width) {
         RCLCPP_WARN(m_logger, "✗ 设置夹爪宽度失败");
     }
     
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
-}
-
-/**
- * @brief 抓取和放置演示
- * 
- * 完整的抓取序列演示
- */
-void ArmPositionController::runPickAndPlaceDemo() {
-    RCLCPP_INFO(m_logger, "\n╔════════════════════════════════════════╗");
-    RCLCPP_INFO(m_logger, "║  🤖 抓取和放置演示                    ║");
-    RCLCPP_INFO(m_logger, "╚════════════════════════════════════════╝\n");
-    
-    // ═══════════════════════════════════════
-    // 步骤1: 移动到物体上方（准备位置）
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "[1/7] 移动到物体上方");
-    
-    Pose above_object;
-    above_object.orientation.w = 1.0;
-    above_object.position.x = 0.4;   // 前方40cm
-    above_object.position.y = 0.0;   // 中央
-    above_object.position.z = 0.4;   // 上方40cm
-    
-    moveToPose(above_object);
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    
-    // ═══════════════════════════════════════
-    // 步骤2: 打开夹爪
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[2/7] 打开夹爪准备抓取");
-    openGripper();
-    
-    // ═══════════════════════════════════════
-    // 步骤3: 下降到抓取位置
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[3/7] 下降到抓取位置");
-    
-    Pose grasp_pose = above_object;
-    grasp_pose.position.z = 0.2;  // 下降到20cm高度
-    
-    moveToPose(grasp_pose);
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    
-    // ═══════════════════════════════════════
-    // 步骤4: 闭合夹爪（模拟抓取物体）
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[4/7] 闭合夹爪抓取物体");
-    setGripperWidth(0.02);  // 设置为2cm（模拟抓取小物体）
-    RCLCPP_INFO(m_logger, "✓ 物体已抓取！");
-    
-    // ═══════════════════════════════════════
-    // 步骤5: 提升物体
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[5/7] 提升物体");
-    
-    Pose lift_pose = grasp_pose;
-    lift_pose.position.z = 0.5;  // 提升到50cm高度
-    
-    moveToPose(lift_pose);
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    
-    // ═══════════════════════════════════════
-    // 步骤6: 移动到放置位置
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[6/7] 移动到放置位置");
-    
-    Pose place_pose;
-    place_pose.orientation.w = 1.0;
-    place_pose.position.x = 0.4;
-    place_pose.position.y = -0.3;  // 移动到右侧30cm
-    place_pose.position.z = 0.3;   // 放置高度30cm
-    
-    moveToPose(place_pose);
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    
-    // ═══════════════════════════════════════
-    // 步骤7: 打开夹爪释放物体
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[7/7] 打开夹爪释放物体");
-    openGripper();
-    RCLCPP_INFO(m_logger, "✓ 物体已放置！");
-    
-    rclcpp::sleep_for(std::chrono::seconds(1));
-    
-    // ═══════════════════════════════════════
-    // 完成：返回ready姿态
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[完成] 返回ready姿态");
-    moveToNamedTarget("ready");
-    
-    RCLCPP_INFO(m_logger, "\n╔════════════════════════════════════════╗");
-    RCLCPP_INFO(m_logger, "║  ✅ 抓取和放置演示完成！              ║");
-    RCLCPP_INFO(m_logger, "╚════════════════════════════════════════╝\n");
+    rclcpp::sleep_for(std::chrono::milliseconds(constants::kMediumDelay));
+    return success;
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -522,20 +476,20 @@ void ArmPositionController::spawnTargetObject() {
     // 1. 创建桌面碰撞物体
     // ========================================
     moveit_msgs::msg::CollisionObject table;
-    table.header.frame_id = "panda_link0";
-    table.id = "table";
+    table.header.frame_id = constants::kBaseFrame;
+    table.id = constants::kTableId;
     
     shape_msgs::msg::SolidPrimitive table_primitive;
     table_primitive.type = table_primitive.BOX;
     table_primitive.dimensions.resize(3);
-    table_primitive.dimensions[0] = 0.6;  // x: 60cm
-    table_primitive.dimensions[1] = 0.8;  // y: 80cm  
-    table_primitive.dimensions[2] = 0.02; // z: 2cm (桌面厚度)
+    table_primitive.dimensions[0] = constants::kTableWidth;   // x: 60cm
+    table_primitive.dimensions[1] = constants::kTableDepth;    // y: 80cm  
+    table_primitive.dimensions[2] = constants::kTableThickness; // z: 2cm (桌面厚度)
     
     geometry_msgs::msg::Pose table_pose;
-    table_pose.position.x = 0.4;
+    table_pose.position.x = constants::kObjectDistance;
     table_pose.position.y = 0.0;
-    table_pose.position.z = -0.01;  // 桌面中心在 -1cm，顶面在 z=0
+    table_pose.position.z = -constants::kTableThickness / 2.0;  // 桌面中心，顶面在 z=0
     table_pose.orientation.w = 1.0;
     
     table.primitives.push_back(table_primitive);
@@ -547,20 +501,20 @@ void ArmPositionController::spawnTargetObject() {
     // 2. 创建目标物体（放在桌面上）
     // ========================================
     moveit_msgs::msg::CollisionObject target_box;
-    target_box.header.frame_id = "panda_link0";
-    target_box.id = "target_box";
+    target_box.header.frame_id = constants::kBaseFrame;
+    target_box.id = constants::kTargetBoxId;
     
     shape_msgs::msg::SolidPrimitive box_primitive;
     box_primitive.type = box_primitive.BOX;
     box_primitive.dimensions.resize(3);
-    box_primitive.dimensions[0] = 0.05;  // x: 5cm
-    box_primitive.dimensions[1] = 0.05;  // y: 5cm
-    box_primitive.dimensions[2] = 0.05;  // z: 5cm
+    box_primitive.dimensions[0] = constants::kTargetBoxSize;  // x: 5cm
+    box_primitive.dimensions[1] = constants::kTargetBoxSize;  // y: 5cm
+    box_primitive.dimensions[2] = constants::kTargetBoxSize;  // z: 5cm
     
     geometry_msgs::msg::Pose box_pose;
-    box_pose.position.x = 0.4;   // 前方40cm
+    box_pose.position.x = constants::kObjectDistance;   // 前方40cm
     box_pose.position.y = 0.0;   // 中央
-    box_pose.position.z = 0.025; // 桌面上方 2.5cm（立方体一半高度）
+    box_pose.position.z = constants::kTargetBoxSize / 2.0; // 桌面上方（立方体一半高度）
     box_pose.orientation.w = 1.0;
     
     target_box.primitives.push_back(box_primitive);
@@ -571,7 +525,7 @@ void ArmPositionController::spawnTargetObject() {
     // 添加所有物体到场景
     m_planningSceneInterface->applyCollisionObjects(collision_objects);
     
-    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    rclcpp::sleep_for(std::chrono::milliseconds(constants::kMediumDelay));
     
     RCLCPP_INFO(m_logger, "✓ 场景物体已生成");
     RCLCPP_INFO(m_logger, "  - 桌面: 60cm × 80cm × 2cm (顶面在 z=0)");
@@ -587,12 +541,12 @@ void ArmPositionController::removeTargetObject() {
     RCLCPP_INFO(m_logger, "正在移除场景物体...");
     
     std::vector<std::string> object_ids;
-    object_ids.push_back("target_box");
-    object_ids.push_back("table");  // 也移除桌面
+    object_ids.push_back(constants::kTargetBoxId);
+    object_ids.push_back(constants::kTableId);  // 也移除桌面
     
     m_planningSceneInterface->removeCollisionObjects(object_ids);
     
-    rclcpp::sleep_for(std::chrono::milliseconds(300));
+    rclcpp::sleep_for(std::chrono::milliseconds(constants::kShortDelay));
     
     RCLCPP_INFO(m_logger, "✓ 场景物体已移除\n");
 }
@@ -663,40 +617,25 @@ void ArmPositionController::allowObjectCollision(const std::string& object_id, b
     moveit_msgs::msg::PlanningScene planning_scene_msg;
     planning_scene_msg.is_diff = true;
     
-    // 设置 ACM: 夹爪相关链接
+    // 使用 default_entry_names/values 方式修改 ACM
+    // 这种方式更简单且不会破坏现有的碰撞矩阵
+    auto& acm = planning_scene_msg.allowed_collision_matrix;
+    
+    // 夹爪相关链接
     std::vector<std::string> gripper_links = {
         "panda_hand",
         "panda_leftfinger",
         "panda_rightfinger"
     };
     
-    // 构建 ACM 消息
-    auto& acm = planning_scene_msg.allowed_collision_matrix;
+    // 设置允许物体与所有夹爪链接碰撞
+    acm.default_entry_names.push_back(object_id);
+    acm.default_entry_values.push_back(allow);
     
-    // 添加物体到 ACM
-    acm.entry_names.push_back(object_id);
-    moveit_msgs::msg::AllowedCollisionEntry object_entry;
-    object_entry.enabled.push_back(false);  // 物体自身
-    acm.entry_values.push_back(object_entry);
-    
-    // 为每个夹爪链接添加条目
+    // 为每个夹爪链接单独设置
     for (const auto& link : gripper_links) {
-        acm.entry_names.push_back(link);
-        moveit_msgs::msg::AllowedCollisionEntry entry;
-        // 初始化所有条目
-        for (size_t i = 0; i < acm.entry_names.size() - 1; ++i) {
-            // 如果是物体，设置允许/禁止碰撞
-            if (acm.entry_names[i] == object_id) {
-                entry.enabled.push_back(allow);
-            } else {
-                entry.enabled.push_back(false);
-            }
-        }
-        entry.enabled.push_back(false);  // 与自身
-        acm.entry_values.push_back(entry);
-        
-        // 更新物体条目
-        acm.entry_values[0].enabled.push_back(allow);
+        acm.default_entry_names.push_back(link);
+        acm.default_entry_values.push_back(allow);
     }
     
     // 发布更新
@@ -740,7 +679,7 @@ void ArmPositionController::runRealisticPickAndPlace() {
     above_object.orientation.w = 0.0;
     above_object.position.x = 0.4;   // 前方40cm
     above_object.position.y = 0.0;   // 中央
-    above_object.position.z = 0.4;   // 上方40cm
+    above_object.position.z = 0.35;  // 上方35cm（准备位置）
     
     moveToPose(above_object);
     rclcpp::sleep_for(std::chrono::seconds(1));
@@ -761,8 +700,10 @@ void ArmPositionController::runRealisticPickAndPlace() {
     allowObjectCollision(object_id, true);
     
     Pose grasp_pose = above_object;
-    // 下降到物体中心高度 (5cm块的中心在2.5cm)
-    grasp_pose.position.z = 0.025;
+    // panda_hand 到手指夹取点的偏移量约 0.10m
+    // 物体中心在 z=0.025，手指需要在物体中心
+    // 所以 panda_hand 需要在 z = 0.025 + 0.10 = 0.125
+    grasp_pose.position.z = 0.13;  // 物体中心高度 + hand偏移量
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
@@ -818,7 +759,12 @@ void ArmPositionController::runRealisticPickAndPlace() {
     // 完成：返回ready姿态
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "\n[完成] 返回ready姿态");
+    
+    // 恢复碰撞检测（重要：在移动前恢复正常碰撞设置）
+    allowObjectCollision(object_id, false);
+    
     moveToNamedTarget("ready");
+    closeGripper();  // 闭合夹爪（ready姿态只控制手臂，需单独闭合夹爪）
     
     rclcpp::sleep_for(std::chrono::seconds(1));
     

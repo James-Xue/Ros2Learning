@@ -65,7 +65,7 @@ public:
      * 
      * @param target_pose 目标位姿（位置+方向）
      */
-    void moveToPose(const Pose& target_pose);
+    bool moveToPose(const Pose& target_pose);
     
     /**
      * @brief 直接控制关节角度
@@ -109,29 +109,23 @@ public:
      * 
      * 移动到预定义的"open"姿态（3.5cm宽度）
      */
-    void openGripper();
+    bool openGripper();
     
     /**
      * @brief 闭合夹爪
      * 
      * 移动到预定义的"close"姿态（完全闭合）
      */
-    void closeGripper();
+    bool closeGripper();
     
     /**
      * @brief 设置夹爪宽度
      * 
      * @param width 夹爪宽度（单位：米，范围：0.0 ~ 0.08）
      */
-    void setGripperWidth(double width);
+    bool setGripperWidth(double width);
     
-    /**
-     * @brief 抓取和放置演示
-     * 
-     * 完整的抓取序列：移动到物体上方 → 下降 → 闭合夹爪 → 
-     * 提升 → 移动到放置位置 → 打开夹爪
-     */
-    void runPickAndPlaceDemo();
+
     
     // ═════════════════════════════════════════
     // 物体管理和真实抓取方法
