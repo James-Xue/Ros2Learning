@@ -10,6 +10,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include <moveit/planning_scene_interface/planning_scene_interface.hpp>
+#include <moveit_msgs/msg/planning_scene.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 
 // ═══════════════════════════════════════
@@ -172,6 +173,16 @@ public:
      * 包含物体生成、附加、分离的完整流程
      */
     void runRealisticPickAndPlace();
+    
+    /**
+     * @brief 允许/禁止夹爪与指定物体碰撞
+     * 
+     * 通过发布 PlanningScene 消息修改 ACM (Allowed Collision Matrix)
+     * 
+     * @param object_id 物体ID
+     * @param allow true=允许碰撞, false=禁止碰撞
+     */
+    void allowObjectCollision(const std::string& object_id, bool allow);
 
 private:
     /// 机械臂MoveIt规划接口
@@ -182,6 +193,9 @@ private:
     
     /// 规划场景接口（用于管理碰撞物体）
     std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planningSceneInterface;
+    
+    /// PlanningScene 发布器（用于修改 ACM）
+    rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr m_planningScenePub;
     
     /// 日志记录器
     rclcpp::Logger m_logger;

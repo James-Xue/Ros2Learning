@@ -24,6 +24,10 @@ ArmPositionController::ArmPositionController()
     m_planningSceneInterface = 
         std::make_shared<moveit::planning_interface::PlanningSceneInterface>();
     
+    // 创建 PlanningScene 发布器（用于修改 ACM）
+    m_planningScenePub = this->create_publisher<moveit_msgs::msg::PlanningScene>(
+        "planning_scene", 10);
+    
     // 注意：MoveGroupInterface需要在node初始化后才能创建
     // 这里我们在单独的初始化函数中完成
 }
@@ -644,6 +648,67 @@ void ArmPositionController::detachObjectFromGripper(const std::string& object_id
 }
 
 /**
+ * @brief 允许/禁止夹爪与指定物体碰撞
+ * 
+ * 通过发布 PlanningScene 消息修改 ACM
+ * 
+ * @param object_id 物体ID
+ * @param allow true=允许碰撞, false=禁止碰撞
+ */
+void ArmPositionController::allowObjectCollision(const std::string& object_id, bool allow) {
+    RCLCPP_INFO(m_logger, "🔧 正在%s夹爪与物体 '%s' 的碰撞检测...", 
+                allow ? "禁用" : "启用", object_id.c_str());
+    
+    // 创建 PlanningScene 消息
+    moveit_msgs::msg::PlanningScene planning_scene_msg;
+    planning_scene_msg.is_diff = true;
+    
+    // 设置 ACM: 夹爪相关链接
+    std::vector<std::string> gripper_links = {
+        "panda_hand",
+        "panda_leftfinger",
+        "panda_rightfinger"
+    };
+    
+    // 构建 ACM 消息
+    auto& acm = planning_scene_msg.allowed_collision_matrix;
+    
+    // 添加物体到 ACM
+    acm.entry_names.push_back(object_id);
+    moveit_msgs::msg::AllowedCollisionEntry object_entry;
+    object_entry.enabled.push_back(false);  // 物体自身
+    acm.entry_values.push_back(object_entry);
+    
+    // 为每个夹爪链接添加条目
+    for (const auto& link : gripper_links) {
+        acm.entry_names.push_back(link);
+        moveit_msgs::msg::AllowedCollisionEntry entry;
+        // 初始化所有条目
+        for (size_t i = 0; i < acm.entry_names.size() - 1; ++i) {
+            // 如果是物体，设置允许/禁止碰撞
+            if (acm.entry_names[i] == object_id) {
+                entry.enabled.push_back(allow);
+            } else {
+                entry.enabled.push_back(false);
+            }
+        }
+        entry.enabled.push_back(false);  // 与自身
+        acm.entry_values.push_back(entry);
+        
+        // 更新物体条目
+        acm.entry_values[0].enabled.push_back(allow);
+    }
+    
+    // 发布更新
+    m_planningScenePub->publish(planning_scene_msg);
+    
+    // 等待更新生效
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
+    
+    RCLCPP_INFO(m_logger, "✓ 碰撞检测已%s\n", allow ? "禁用" : "启用");
+}
+
+/**
  * @brief 真实的抓取和放置演示
  * 
  * 包含物体生成、附加、分离的完整流程
@@ -691,23 +756,25 @@ void ArmPositionController::runRealisticPickAndPlace() {
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
     
-    // 关键修复：在下降前先将物体附加到夹爪，允许碰撞
+    // 关键修复：允许夹爪与物体碰撞
     // 这样 MoveIt 就不会因为碰撞检测而阻止下降
-    RCLCPP_INFO(m_logger, "ℹ️ 预先附加物体到夹爪，允许碰撞...");
-    attachObjectToGripper(object_id);
+    allowObjectCollision(object_id, true);
     
     Pose grasp_pose = above_object;
-    // 下降到物体中心高度
-    grasp_pose.position.z = 0.025;  // 物体中心在 2.5cm
+    // 下降到物体中心高度 (5cm块的中心在2.5cm)
+    grasp_pose.position.z = 0.025;
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
     
     // ═══════════════════════════════════════
-    // 步骤5: 闭合夹爪
+    // 步骤5: 闭合夹爪并附加物体
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "\n[5/9] 闭合夹爪抓取物体");
     setGripperWidth(0.03);  // 设置为3cm，小于物体5cm
+    
+    // 附加物体到夹爪
+    attachObjectToGripper(object_id);
     RCLCPP_INFO(m_logger, "✓ 物体已被抓取！");
     
     // ═══════════════════════════════════════
