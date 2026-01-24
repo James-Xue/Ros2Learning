@@ -691,10 +691,14 @@ void ArmPositionController::runRealisticPickAndPlace() {
     // ═══════════════════════════════════════
     RCLCPP_INFO(m_logger, "\n[4/9] 下降到抓取位置");
     
+    // 关键修复：在下降前先将物体附加到夹爪，允许碰撞
+    // 这样 MoveIt 就不会因为碰撞检测而阻止下降
+    RCLCPP_INFO(m_logger, "ℹ️ 预先附加物体到夹爪，允许碰撞...");
+    attachObjectToGripper(object_id);
+    
     Pose grasp_pose = above_object;
-    // 进一步降低高度，确保手指能接触物体
-    // 物体中心在 2.5cm，设置略低以确保接触
-    grasp_pose.position.z = 0.02;  // 2cm 高度，略低于物体中心
+    // 下降到物体中心高度
+    grasp_pose.position.z = 0.025;  // 物体中心在 2.5cm
     
     moveToPose(grasp_pose);
     rclcpp::sleep_for(std::chrono::seconds(1));
@@ -702,20 +706,14 @@ void ArmPositionController::runRealisticPickAndPlace() {
     // ═══════════════════════════════════════
     // 步骤5: 闭合夹爪
     // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[5/9] 闭合夹爪");
-    setGripperWidth(0.045);  // 设置为4.5cm（略小于5cm，确保接触）
-    
-    // ═══════════════════════════════════════
-    // 步骤6: 将物体附加到夹爪（关键步骤！）
-    // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[6/9] 附加物体到夹爪");
-    attachObjectToGripper(object_id);
+    RCLCPP_INFO(m_logger, "\n[5/9] 闭合夹爪抓取物体");
+    setGripperWidth(0.03);  // 设置为3cm，小于物体5cm
     RCLCPP_INFO(m_logger, "✓ 物体已被抓取！");
     
     // ═══════════════════════════════════════
-    // 步骤7: 提升物体
+    // 步骤6: 提升物体
     // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[7/9] 提升物体");
+    RCLCPP_INFO(m_logger, "\n[6/9] 提升物体");
     
     Pose lift_pose = grasp_pose;
     lift_pose.position.z = 0.5;  // 提升到50cm高度
@@ -724,9 +722,9 @@ void ArmPositionController::runRealisticPickAndPlace() {
     rclcpp::sleep_for(std::chrono::seconds(1));
     
     // ═══════════════════════════════════════
-    // 步骤8: 移动到放置位置
+    // 步骤7: 移动到放置位置
     // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[8/9] 移动到放置位置");
+    RCLCPP_INFO(m_logger, "\n[7/8] 移动到放置位置");
     
     Pose place_pose;
     place_pose.orientation.w = 1.0;
@@ -738,9 +736,9 @@ void ArmPositionController::runRealisticPickAndPlace() {
     rclcpp::sleep_for(std::chrono::seconds(1));
     
     // ═══════════════════════════════════════
-    // 步骤9: 分离物体并打开夹爪
+    // 步骤8: 分离物体并打开夹爪
     // ═══════════════════════════════════════
-    RCLCPP_INFO(m_logger, "\n[9/9] 分离物体并打开夹爪");
+    RCLCPP_INFO(m_logger, "\n[8/8] 分离物体并打开夹爪");
     
     detachObjectFromGripper(object_id);
     openGripper();
