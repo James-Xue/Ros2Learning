@@ -735,6 +735,10 @@ bool ArmPositionController::graspObject(const std::string& object_id) {
     attachObjectToGripper(object_id);
     RCLCPP_INFO(m_logger, "✓ 物体已被抓取！");
     
+    // 再次确认允许碰撞（防止attach操作充置了碰撞规则）
+    // 确保物体与桌面接触时MoveIt允许提升
+    allowObjectCollision(object_id, true);
+    
     // 提升物体
     RCLCPP_INFO(m_logger, "提升物体");
     Pose lift_pose = grasp_pose;
@@ -792,20 +796,21 @@ bool ArmPositionController::placeObject(const std::string& object_id) {
  * @param object_id 要移除的物体ID
  */
 void ArmPositionController::cleanupAndReturnHome(const std::string& object_id) {
-    RCLCPP_INFO(m_logger, "\n[4/4] 返回初始位置并清理");
+    RCLCPP_INFO(m_logger, "\n[4/4] 清理场景并返回初始位置");
     
-    // 恢复碰撞检测（重要：在移动前恢复正常碰撞设置）
-    allowObjectCollision(object_id, false);
+    // 策略调整：先移除物体，彻底避免碰撞问题
+    RCLCPP_INFO(m_logger, "移除场景中的物体");
+    removeTargetObject();
+    rclcpp::sleep_for(std::chrono::milliseconds(500));
     
     // 返回 ready 姿态
     moveToNamedTarget("ready");
-    closeGripper();  // 闭合夹爪（ready姿态只控制手臂，需单独闭合夹爪）
+    closeGripper();  // 闭合夹爪
+    
+    // 恢复碰撞检测
+    allowObjectCollision(object_id, false);
     
     rclcpp::sleep_for(std::chrono::milliseconds(constants::kLongDelay));
-    
-    // 清理：移除物体
-    RCLCPP_INFO(m_logger, "移除场景中的物体");
-    removeTargetObject();
 }
 
 /**

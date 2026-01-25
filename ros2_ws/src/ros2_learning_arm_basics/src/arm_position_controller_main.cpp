@@ -59,6 +59,9 @@ int main(int argc, char** argv) {
     RCLCPP_INFO(node->get_logger(), "\n所有演示完成，程序退出");
     // rclcpp::spin(node);  // 去掉spin，演示后自动退出
     
+    // 显式销毁节点，防止 Segfault
+    node.reset();
+    
     rclcpp::shutdown();
     return 0;
 }
