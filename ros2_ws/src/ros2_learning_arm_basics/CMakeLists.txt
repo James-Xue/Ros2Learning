@@ -20,6 +20,7 @@ include_directories(include)
 add_executable(arm_position_controller 
   src/arm_position_controller.cpp
   src/arm_position_controller_main.cpp
+  src/arm_controller_params.cpp
 )
 
 ament_target_dependencies(arm_position_controller

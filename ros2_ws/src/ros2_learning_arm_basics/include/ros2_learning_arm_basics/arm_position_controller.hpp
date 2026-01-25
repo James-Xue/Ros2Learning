@@ -14,6 +14,8 @@
 #include <moveit_msgs/msg/collision_object.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 
+#include "ros2_learning_arm_basics/arm_controller_params.hpp"
+
 // ═══════════════════════════════════════
 // 类型别名 - 简化长类型名
 // ═══════════════════════════════════════
@@ -257,6 +259,9 @@ private:
     
     /// 日志记录器
     rclcpp::Logger m_logger;
+    
+    /// 控制器参数
+    ArmControllerParams m_params;
 };
 
 #endif  // ROS2_LEARNING_ARM_BASICS_ARM_POSITION_CONTROLLER_HPP_
