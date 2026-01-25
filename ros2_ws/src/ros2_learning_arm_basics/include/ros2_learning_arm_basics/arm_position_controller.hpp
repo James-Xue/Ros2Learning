@@ -11,16 +11,19 @@
 #include <moveit/move_group_interface/move_group_interface.hpp>
 #include <moveit/planning_scene_interface/planning_scene_interface.hpp>
 #include <moveit_msgs/msg/planning_scene.hpp>
+#include <moveit_msgs/msg/collision_object.hpp>
 #include <geometry_msgs/msg/pose.hpp>
 
 // ═══════════════════════════════════════
 // 类型别名 - 简化长类型名
 // ═══════════════════════════════════════
 using MoveGroup = moveit::planning_interface::MoveGroupInterface;
+using PlanningSceneInterface = moveit::planning_interface::PlanningSceneInterface;
 using Pose = geometry_msgs::msg::Pose;
 using Plan = moveit::planning_interface::MoveGroupInterface::Plan;
 using Trajectory = moveit_msgs::msg::RobotTrajectory;
 using ErrorCode = moveit::core::MoveItErrorCode;
+using PlanningScenePublisher = rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr;
 
 /**
  * @class ArmPositionController
@@ -179,6 +182,67 @@ public:
     void allowObjectCollision(const std::string& object_id, bool allow);
 
 private:
+    // ═════════════════════════════════════════
+    // 辅助函数（碰撞物体创建）
+    // ═════════════════════════════════════════
+    
+    /**
+     * @brief 创建桌面碰撞物体
+     * 
+     * @return 桌面碰撞物体消息
+     */
+    moveit_msgs::msg::CollisionObject createTableCollisionObject();
+    
+    /**
+     * @brief 创建目标物体碰撞物体
+     * 
+     * @return 目标物体碰撞物体消息
+     */
+    moveit_msgs::msg::CollisionObject createTargetBoxCollisionObject();
+    
+    // ═════════════════════════════════════════
+    // Pick-and-Place 辅助函数
+    // ═════════════════════════════════════════
+    
+    /**
+     * @brief 移动到物体上方的准备位置
+     * 
+     * @param object_id 目标物体ID
+     * @return true 成功
+     * @return false 失败
+     */
+    bool moveToPreGraspPosition(const std::string& object_id);
+    
+    /**
+     * @brief 抓取指定物体
+     * 
+     * @param object_id 目标物体ID
+     * @return true 成功抓取
+     * @return false 抓取失败
+     */
+    bool graspObject(const std::string& object_id);
+    
+    /**
+     * @brief 将物体放置到目标位置
+     * 
+     * @param object_id 目标物体ID
+     * @return true 成功放置
+     * @return false 放置失败
+     */
+    bool placeObject(const std::string& object_id);
+    
+    /**
+     * @brief 清理场景并返回初始位置
+     * 
+     * @param object_id 要移除的物体ID
+     */
+    void cleanupAndReturnHome(const std::string& object_id);
+
+private:
+    // ═════════════════════════════════════════
+    // 成员变量
+    // ═════════════════════════════════════════
+    
     /// 机械臂MoveIt规划接口
     std::shared_ptr<MoveGroup> m_moveGroup;
     
@@ -186,10 +250,10 @@ private:
     std::shared_ptr<MoveGroup> m_gripperMoveGroup;
     
     /// 规划场景接口（用于管理碰撞物体）
-    std::shared_ptr<moveit::planning_interface::PlanningSceneInterface> m_planningSceneInterface;
+    std::shared_ptr<PlanningSceneInterface> m_planningSceneInterface;
     
     /// PlanningScene 发布器（用于修改 ACM）
-    rclcpp::Publisher<moveit_msgs::msg::PlanningScene>::SharedPtr m_planningScenePub;
+    PlanningScenePublisher m_planningScenePub;
     
     /// 日志记录器
     rclcpp::Logger m_logger;
