@@ -40,6 +40,7 @@ rosidl_get_typesupport_target(cpp_typesupport_target
 target_link_libraries(turtlesim_go_to_server "${cpp_typesupport_target}")
 
 add_executable(turtlesim_go_to_client
+  src/turtlesim_go_to_client_node.cpp
   src/turtlesim_go_to_client_main.cpp
 )
 

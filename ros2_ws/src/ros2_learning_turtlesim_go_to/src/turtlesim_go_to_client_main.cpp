@@ -6,7 +6,7 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "ros2_learning_turtlesim_go_to/srv/go_to.hpp"
+#include "ros2_learning_turtlesim_go_to/turtlesim_go_to_client_node.hpp"
 
 namespace
 {
@@ -55,30 +55,27 @@ int main(int argc, char **argv)
     const std::string turtle_name = (argc >= 5) ? argv[4] : "turtle1";
 
     rclcpp::init(argc, argv);
-    auto node = std::make_shared<rclcpp::Node>("turtlesim_go_to_client");
 
-    using GoTo = ros2_learning_turtlesim_go_to::srv::GoTo;
-    auto client = node->create_client<GoTo>("/ros2_learning/turtlesim/go_to");
+    auto node = std::make_shared<
+        ros2_learning_turtlesim_go_to::TurtlesimGoToClientNode>();
 
-    if (!client->wait_for_service(std::chrono::seconds(2)))
+    if (!node->client()->wait_for_service(node->wait_service_timeout()))
     {
-        std::cerr << "Service not available: /ros2_learning/turtlesim/go_to\n";
+        std::cerr << "Service not available: " << node->service_name() << "\n";
         rclcpp::shutdown();
         return 1;
     }
 
-    auto req = std::make_shared<GoTo::Request>();
-    req->turtle_name = turtle_name;
-    req->x = static_cast<float>(x);
-    req->y = static_cast<float>(y);
-    req->theta = static_cast<float>(theta);
+    auto future =
+        node->async_go_to(static_cast<float>(x), static_cast<float>(y),
+                          static_cast<float>(theta), turtle_name);
 
-    auto future = client->async_send_request(req);
-
-    const auto status = future.wait_for(std::chrono::seconds(2));
-    if (status != std::future_status::ready)
+    const auto rc =
+        rclcpp::spin_until_future_complete(node, future, node->call_timeout());
+    if (rc != rclcpp::FutureReturnCode::SUCCESS)
     {
-        std::cerr << "Timed out waiting for response.\n";
+        std::cerr << "Failed waiting for response (rc=" << static_cast<int>(rc)
+                  << ").\n";
         rclcpp::shutdown();
         return 1;
     }

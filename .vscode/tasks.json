@@ -202,6 +202,56 @@
                 "group": "ros2-nav2",
                 "clear": true
             }
+        },
+        {
+            "label": "ROS2: Run turtlesim_node (integrated terminal)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "source /opt/ros/jazzy/setup.bash && ros2 run turtlesim turtlesim_node"
+            ],
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-turtlesim",
+                "clear": true
+            }
+        },
+        {
+            "label": "ROS2: Run turtlesim_go_to_server (integrated terminal)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && ros2 run ros2_learning_turtlesim_go_to turtlesim_go_to_server"
+            ],
+            "problemMatcher": [],
+            "isBackground": true,
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-turtlesim",
+                "clear": true
+            }
+        },
+        {
+            "label": "ROS2: Run turtlesim_go_to_client (integrated terminal)",
+            "type": "shell",
+            "command": "bash",
+            "args": [
+                "-lc",
+                "cd '${workspaceFolder}/ros2_ws' && source ./scripts/source.sh jazzy && ros2 run ros2_learning_turtlesim_go_to turtlesim_go_to_client 5.5 5.5 1.57 turtle1"
+            ],
+            "problemMatcher": [],
+            "presentation": {
+                "reveal": "always",
+                "panel": "dedicated",
+                "group": "ros2-turtlesim",
+                "clear": true
+            }
         }
     ]
 }
