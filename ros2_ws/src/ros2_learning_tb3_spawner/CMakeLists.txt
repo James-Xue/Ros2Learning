@@ -25,6 +25,11 @@ add_executable(tb3_spawner
   src/tb3_spawner_main.cpp
 )
 
+target_include_directories(tb3_spawner PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
+
 ament_target_dependencies(tb3_spawner
   rclcpp
   ros_gz_interfaces
@@ -41,6 +46,10 @@ target_link_libraries(tb3_spawner "${cpp_typesupport_target}")
 install(TARGETS
   tb3_spawner
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY include/
+  DESTINATION include
 )
 
 install(DIRECTORY launch
