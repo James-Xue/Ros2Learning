@@ -5,8 +5,9 @@ A tiny ROS 2 (C++) example package that controls **turtlesim** via a **service**
 - `turtlesim_go_to_server`: provides `/ros2_learning/turtlesim/go_to` (custom service)
 - `turtlesim_go_to_client`: calls the above service from CLI
 
-The server **forwards** requests to turtlesim's built-in service:
-- `/<turtle_name>/teleport_absolute`
+The server drives turtlesim **smoothly** by:
+- subscribing `/<turtle_name>/pose`
+- publishing `/<turtle_name>/cmd_vel`
 
 ## Build
 

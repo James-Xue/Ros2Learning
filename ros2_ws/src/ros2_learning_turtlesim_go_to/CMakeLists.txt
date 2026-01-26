@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(geometry_msgs REQUIRED)
 find_package(turtlesim REQUIRED)
 find_package(rosidl_default_generators REQUIRED)
 
@@ -29,6 +30,7 @@ target_include_directories(turtlesim_go_to_server PRIVATE
 
 ament_target_dependencies(turtlesim_go_to_server
   rclcpp
+  geometry_msgs
   turtlesim
 )
 

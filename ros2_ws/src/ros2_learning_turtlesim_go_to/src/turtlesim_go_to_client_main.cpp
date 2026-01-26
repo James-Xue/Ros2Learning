@@ -16,8 +16,8 @@ void print_usage(const char *prog)
               << "Example:\n  " << prog << " 5.5 5.5 1.57 turtle1\n\n"
               << "Notes:\n"
               << "- This client calls service: /ros2_learning/turtlesim/go_to\n"
-              << "- Server will forward to turtlesim: "
-                 "/<turtle_name>/teleport_absolute\n";
+              << "- Server will drive turtlesim smoothly via: "
+                 "/<turtle_name>/cmd_vel\n";
 }
 
 bool parse_double(const char *s, double &out)
