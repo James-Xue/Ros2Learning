@@ -1,0 +1,620 @@
+<sdf version='1.11'>
+  <model name='panda'>
+    <link name='panda_link0'>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link0_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link0.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link0_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link0.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+
+    <joint name='panda_world_fixed' type='fixed'>
+      <parent>world</parent>
+      <child>panda_link0</child>
+    </joint>
+    <joint name='panda_joint1' type='revolute'>
+      <pose relative_to='panda_link0'>0 0 0.33300000000000002 0 0 0</pose>
+      <parent>panda_link0</parent>
+      <child>panda_link1</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.9670999999999998</lower>
+          <upper>2.9670999999999998</upper>
+          <effort>87</effort>
+          <velocity>2.3925000000000001</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link1'>
+      <pose relative_to='panda_joint1'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link1_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link1.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link1_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link1.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_joint2' type='revolute'>
+      <pose relative_to='panda_link1'>0 0 0 -1.57079632679 0 0</pose>
+      <parent>panda_link1</parent>
+      <child>panda_link2</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-1.8326</lower>
+          <upper>1.8326</upper>
+          <effort>87</effort>
+          <velocity>2.3925000000000001</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link2'>
+      <pose relative_to='panda_joint2'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link2_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link2.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link2_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link2.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_joint3' type='revolute'>
+      <pose relative_to='panda_link2'>0 -0.316 0 1.57079632679 0 0</pose>
+      <parent>panda_link2</parent>
+      <child>panda_link3</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.9670999999999998</lower>
+          <upper>2.9670999999999998</upper>
+          <effort>87</effort>
+          <velocity>2.3925000000000001</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link3'>
+      <pose relative_to='panda_joint3'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link3_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link3.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link3_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link3.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_joint4' type='revolute'>
+      <pose relative_to='panda_link3'>0.082500000000000004 0 0 1.57079632679 0 0</pose>
+      <parent>panda_link3</parent>
+      <child>panda_link4</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-3.1415999999999999</lower>
+          <upper>0.087300000000000003</upper>
+          <effort>87</effort>
+          <velocity>2.3925000000000001</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link4'>
+      <pose relative_to='panda_joint4'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link4_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link4.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link4_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link4.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_joint5' type='revolute'>
+      <pose relative_to='panda_link4'>-0.082500000000000004 0.38400000000000001 0 -1.57079632679 0 0</pose>
+      <parent>panda_link4</parent>
+      <child>panda_link5</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.9670999999999998</lower>
+          <upper>2.9670999999999998</upper>
+          <effort>12</effort>
+          <velocity>2.871</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link5'>
+      <pose relative_to='panda_joint5'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link5_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link5.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link5_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link5.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_joint6' type='revolute'>
+      <pose relative_to='panda_link5'>0 0 0 1.57079632679 0 0</pose>
+      <parent>panda_link5</parent>
+      <child>panda_link6</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-0.087300000000000003</lower>
+          <upper>3.8222999999999998</upper>
+          <effort>12</effort>
+          <velocity>2.871</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link6'>
+      <pose relative_to='panda_joint6'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link6_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link6.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link6_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link6.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_joint7' type='revolute'>
+      <pose relative_to='panda_link6'>0.087999999999999995 0 0 1.57079632679 0 0</pose>
+      <parent>panda_link6</parent>
+      <child>panda_link7</child>
+      <axis>
+        <xyz>0 0 1</xyz>
+        <limit>
+          <lower>-2.9670999999999998</lower>
+          <upper>2.9670999999999998</upper>
+          <effort>12</effort>
+          <velocity>2.871</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_link7'>
+      <pose relative_to='panda_joint7'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0.071333333333333332 0 0 0</pose>
+        <mass>3</mass>
+        <inertia>
+          <ixx>0.037632666666666668</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.037632666666666668</iyy>
+          <iyz>0</iyz>
+          <izz>0.029999999999999999</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_link7_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/link7.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <collision name='panda_link7_fixed_joint_lump__panda_hand_collision_1'>
+        <pose>0 0 0.107 0 0 -0.78539816339699997</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/hand.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_link7_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/link7.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+      <visual name='panda_link7_fixed_joint_lump__panda_hand_visual_1'>
+        <pose>0 0 0.107 0 0 -0.78539816339699997</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/hand.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_finger_joint1' type='prismatic'>
+      <pose relative_to='panda_link7'>0 0 0.16539999999999999 0 0 -0.78539816339699997</pose>
+      <parent>panda_link7</parent>
+      <child>panda_leftfinger</child>
+      <axis>
+        <xyz>0 1 0</xyz>
+        <limit>
+          <lower>0</lower>
+          <upper>0.040000000000000001</upper>
+          <effort>20</effort>
+          <velocity>0.20000000000000001</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_leftfinger'>
+      <pose relative_to='panda_finger_joint1'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_leftfinger_collision'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/finger.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_leftfinger_visual'>
+        <pose>0 0 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/finger.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <joint name='panda_finger_joint2' type='prismatic'>
+      <pose relative_to='panda_link7'>0 0 0.16539999999999999 0 0 -0.78539816339699997</pose>
+      <parent>panda_link7</parent>
+      <child>panda_rightfinger</child>
+      <axis>
+        <xyz>0 -1 0</xyz>
+        <mimic joint='panda_finger_joint1'>
+          <multiplier>1</multiplier>
+          <offset>0</offset>
+          <reference>0</reference>
+        </mimic>
+        <limit>
+          <lower>0</lower>
+          <upper>0.040000000000000001</upper>
+          <effort>20</effort>
+          <velocity>0.20000000000000001</velocity>
+        </limit>
+        <dynamics>
+          <spring_reference>0</spring_reference>
+          <spring_stiffness>0</spring_stiffness>
+        </dynamics>
+      </axis>
+    </joint>
+    <link name='panda_rightfinger'>
+      <pose relative_to='panda_finger_joint2'>0 0 0 0 0 0</pose>
+      <inertial>
+        <pose>0 0 0 0 0 0</pose>
+        <mass>1</mass>
+        <inertia>
+          <ixx>0.01</ixx>
+          <ixy>0</ixy>
+          <ixz>0</ixz>
+          <iyy>0.01</iyy>
+          <iyz>0</iyz>
+          <izz>0.01</izz>
+        </inertia>
+      </inertial>
+      <collision name='panda_rightfinger_collision'>
+        <pose>0 0 0 0 0 -3.1415926535895871</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/collision/finger.stl</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name='panda_rightfinger_visual'>
+        <pose>0 0 0 0 0 -3.1415926535895871</pose>
+        <geometry>
+          <mesh>
+            <scale>1 1 1</scale>
+            <uri>model://moveit_resources_panda_description/meshes/visual/finger.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+    <frame name='panda_hand_joint' attached_to='panda_link8'>
+      <pose>0 0 0 0 0 -0.78539816339699997</pose>
+    </frame>
+    <frame name='panda_hand' attached_to='panda_hand_joint'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+    <frame name='panda_joint8' attached_to='panda_link7'>
+      <pose>0 0 0.107 0 0 0</pose>
+    </frame>
+    <frame name='panda_link8' attached_to='panda_joint8'>
+      <pose>0 0 0 0 0 0</pose>
+    </frame>
+<plugin filename='gz-sim-joint-state-publisher-system' name='gz::sim::systems::JointStatePublisher'></plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint1</joint_name>
+      <topic>/panda/joint1/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2.9671</cmd_max>
+      <cmd_min>-2.9671</cmd_min>
+    </plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint2</joint_name>
+      <topic>/panda/joint2/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>1.8326</cmd_max>
+      <cmd_min>-1.8326</cmd_min>
+    </plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint3</joint_name>
+      <topic>/panda/joint3/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2.9671</cmd_max>
+      <cmd_min>-2.9671</cmd_min>
+    </plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint4</joint_name>
+      <topic>/panda/joint4/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>0.0873</cmd_max>
+      <cmd_min>-3.1416</cmd_min>
+    </plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint5</joint_name>
+      <topic>/panda/joint5/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2.9671</cmd_max>
+      <cmd_min>-2.9671</cmd_min>
+    </plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint6</joint_name>
+      <topic>/panda/joint6/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>3.8223</cmd_max>
+      <cmd_min>-0.0873</cmd_min>
+    </plugin>
+
+    <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
+      <joint_name>panda_joint7</joint_name>
+      <topic>/panda/joint7/cmd_pos</topic>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.1</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2.9671</cmd_max>
+      <cmd_min>-2.9671</cmd_min>
+    </plugin>
+  </model>
+</sdf>

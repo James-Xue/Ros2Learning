@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>ros2_learning_panda_gazebo_demo</name>
+  <version>0.0.1</version>
+  <description>Simple Panda + Gazebo Sim + RViz2 demo with a fixed camera for beginners.</description>
+  <maintainer email="user@example.com">Ros2Learning</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>std_msgs</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ros_gz_sim</exec_depend>
+  <exec_depend>ros_gz_bridge</exec_depend>
+  <exec_depend>ros_gz_image</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>tf2_ros</exec_depend>
+  <exec_depend>rviz2</exec_depend>
+
+  <exec_depend>moveit_resources_panda_description</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
