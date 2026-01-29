@@ -1,53 +1,82 @@
-# Gazebo -> ROS
+# ros_gz_bridge 配置文件
+# 该文件定义了 ROS 2 和 Gazebo 仿真器之间的通信桥梁。
+# 每一个列表项 (-) 都是一条“桥接规则”，告诉 ros_gz_bridge 应该转发哪个话题，
+# 以及消息类型如何转换。
+
+# ==========================================================
+# 1. 仿真时间同步 (Gazebo -> ROS)
+# ==========================================================
+# 将 Gazebo 的仿真时间 (/clock) 转发给 ROS。
+# 这对于 ROS 节点使用 "use_sim_time: true" 至关重要，
+# 确保所有节点（如 RViz, 控制器）的时间都以仿真世界的节奏流逝，而不是现实时间。
 - ros_topic_name: "clock"
   gz_topic_name: "clock"
   ros_type_name: "rosgraph_msgs/msg/Clock"
   gz_type_name: "gz.msgs.Clock"
   direction: GZ_TO_ROS
 
+# ==========================================================
+# 2. 关节状态反馈 (Gazebo -> ROS)
+# ==========================================================
+# 将 Gazebo 中物理引擎计算出的关节实时位置 (Joint State) 转发回 ROS。
+# gz_topic_name 指向的是 Gazebo 内部的模型状态话题，路径通常很长。
+# ros_topic_name 映射为标准的 "/joint_states"，供 RobotStatePublisher 使用。
 - ros_topic_name: "joint_states"
   gz_topic_name: "/world/panda_demo/model/panda/joint_state"
   ros_type_name: "sensor_msgs/msg/JointState"
   gz_type_name: "gz.msgs.Model"
   direction: GZ_TO_ROS
 
-# ROS -> Gazebo joint position commands
+# ==========================================================
+# 3. 关节位置控制命令 (ROS -> Gazebo)
+# ==========================================================
+# 以下规则将 ROS 发出的控制指令转发给 Gazebo 里的关节控制器。
+# 每一个关节都需要单独的一条桥接规则。
+# direction: ROS_TO_GZ 表示数据流向是从 ROS 发往 Gazebo。
+
+# --- 关节 1 ---
 - ros_topic_name: "/panda/joint1/cmd_pos"
   gz_topic_name: "/panda/joint1/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
 
+# --- 关节 2 ---
 - ros_topic_name: "/panda/joint2/cmd_pos"
   gz_topic_name: "/panda/joint2/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
 
+# --- 关节 3 ---
 - ros_topic_name: "/panda/joint3/cmd_pos"
   gz_topic_name: "/panda/joint3/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
 
+# --- 关节 4 ---
 - ros_topic_name: "/panda/joint4/cmd_pos"
   gz_topic_name: "/panda/joint4/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
 
+# --- 关节 5 ---
 - ros_topic_name: "/panda/joint5/cmd_pos"
   gz_topic_name: "/panda/joint5/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
 
+# --- 关节 6 ---
 - ros_topic_name: "/panda/joint6/cmd_pos"
   gz_topic_name: "/panda/joint6/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"
   gz_type_name: "gz.msgs.Double"
   direction: ROS_TO_GZ
 
+# --- 关节 7 ---
 - ros_topic_name: "/panda/joint7/cmd_pos"
   gz_topic_name: "/panda/joint7/cmd_pos"
   ros_type_name: "std_msgs/msg/Float64"

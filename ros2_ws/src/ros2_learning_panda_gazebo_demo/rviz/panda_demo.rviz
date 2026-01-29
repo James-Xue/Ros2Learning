@@ -13,6 +13,11 @@ Panels:
 Visualization Manager:
   Class: ""
   Displays:
+    # ==========================================================
+    # 网格 (Grid)
+    # 作用：提供一个地平线参考平面，让你知道“地”在哪里。
+    # Cell Size: 1 表示每格 1 米。
+    # ==========================================================
     - Alpha: 0.5
       Cell Size: 1
       Class: rviz_default_plugins/Grid
@@ -25,6 +30,12 @@ Visualization Manager:
       Plane: XY
       Reference Frame: world
       Value: true
+      
+    # ==========================================================
+    # 机器人模型 (RobotModel)
+    # 作用：根据 URDF (robot_description) 和 TF 实时显示机器人的 3D 姿态。
+    # 这是做机械臂仿真最核心的可视化插件。
+    # ==========================================================
     - Class: rviz_default_plugins/RobotModel
       Enabled: true
       Name: RobotModel
@@ -39,9 +50,22 @@ Visualization Manager:
       Robot Description: robot_description
       TF Prefix: ""
       Value: true
+      
+    # ==========================================================
+    # 坐标系 (TF)
+    # 作用：显示各个关节 (Joint/Link) 的坐标系位置和方向。
+    # 红/绿/蓝 分别代表 X/Y/Z 轴。这对于调试关节朝向非常有帮助。
+    # 默认这里设为 Enabled: false (关闭)，需要看的时候可以手动勾选。
+    # ==========================================================
     - Class: rviz_default_plugins/TF
       Enabled: false
       Name: TF
+      
+    # ==========================================================
+    # 图像显示 (Image)
+    # 作用：显示 Gazebo 中相机拍摄到的画面。
+    # Topic: /demo_camera/image 是由 ros_gz_image 桥接过来的。
+    # ==========================================================
     - Class: rviz_default_plugins/Image
       Enabled: true
       Name: Image
@@ -49,6 +73,13 @@ Visualization Manager:
         Value: /demo_camera/image
       Transport Hint: raw
   Enabled: true
+  
+  # ==========================================================
+  # 全局选项 (Global Options)
+  # Fixed Frame: "world"
+  # 这是 RViz 的“绝对坐标系”。所有的物体都相对于这个坐标系进行绘制。
+  # 我们的 launch 文件里发布了 world -> panda_link0 的静态变换，所以以此为基准。
+  # ==========================================================
   Global Options:
     Background Color: 48; 48; 48
     Fixed Frame: world
@@ -59,6 +90,12 @@ Visualization Manager:
     - Class: rviz_default_plugins/MoveCamera
     - Class: rviz_default_plugins/Select
     - Class: rviz_default_plugins/FocusCamera
+  
+  # ==========================================================
+  # 视角控制 (Views)
+  # 定义了打开 RViz 时摄像机的初始位置和角度。
+  # 让你一启动就能看到机器人的全貌。
+  # ==========================================================
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
