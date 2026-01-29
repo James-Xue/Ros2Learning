@@ -23,12 +23,16 @@ private:
     // 这是核心业务逻辑所在，控制机械臂如何持续运动。
     void onTimer();
 
+private:
     // 定时器指针：用于周期性触发回调。
     rclcpp::TimerBase::SharedPtr timer_;
+
+    // 使用别名简化长类型
+    using Float64Msg = std_msgs::msg::Float64;
     
     // 发布者列表：因为有 7 个关节，我们使用一个 vector 来存储 7 个发布者。
     // 每个发布者对应一个关节的控制话题。
-    std::vector<rclcpp::Publisher<std_msgs::msg::Float64>::SharedPtr> publishers_;
+    std::vector<rclcpp::Publisher<Float64Msg>::SharedPtr> publishers_;
     
     // 记录节点的启动时间：用于在计算正弦波时作为时间基准 (t)。
     rclcpp::Time start_time_;
