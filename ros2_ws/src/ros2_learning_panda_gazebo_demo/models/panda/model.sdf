@@ -1,6 +1,12 @@
 <sdf version='1.11'>
   <model name='panda'>
+    <!-- ========================================================================= -->
+    <!-- Link: 刚体部件 (比如机器人的底座) -->
+    <!-- 每个 Link 包含以下关键部分：Inertial(惯性), Collision(碰撞), Visual(视觉) -->
+    <!-- ========================================================================= -->
     <link name='panda_link0'>
+      <!-- 1. 惯性属性 (Inertial) -->
+      <!-- 物理仿真必需。如果没有质量 (mass) 和转动惯量 (inertia)，物理引擎会报错或崩溃。 -->
       <inertial>
         <pose>0 0 0 0 0 0</pose>
         <mass>1</mass>
@@ -13,6 +19,9 @@
           <izz>0.01</izz>
         </inertia>
       </inertial>
+      <!-- 2. 碰撞几何体 (Collision) -->
+      <!-- 物理引擎用来计算“我是不是撞到东西了”。为了计算速度，通常使用比视觉模型更简单的几何体 (比如用方块代替复杂曲面)， -->
+      <!-- 但在这里我们为了精确，复用了 STL 网格文件。 -->
       <collision name='panda_link0_collision'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -22,6 +31,8 @@
           </mesh>
         </geometry>
       </collision>
+      <!-- 3. 视觉模型 (Visual) -->
+      <!-- 仅仅给人看的 (在 GUI 里显示)。对物理仿真没有任何影响。 -->
       <visual name='panda_link0_visual'>
         <pose>0 0 0 0 0 0</pose>
         <geometry>
@@ -33,21 +44,28 @@
       </visual>
     </link>
 
+    <!-- ========================================================================= -->
+    <!-- Joint: 关节 (连接两个 Link 的轴承) -->
+    <!-- 定义了父子关系 (parent-child) 和运动方式 (type)。 -->
+    <!-- type='fixed': 固定不变 (像胶水粘住)。 -->
+    <!-- ========================================================================= -->
     <joint name='panda_world_fixed' type='fixed'>
       <parent>world</parent>
       <child>panda_link0</child>
     </joint>
+    <!-- type='revolute': 旋转关节 (像门的铰链)。 -->
     <joint name='panda_joint1' type='revolute'>
       <pose relative_to='panda_link0'>0 0 0.33300000000000002 0 0 0</pose>
       <parent>panda_link0</parent>
       <child>panda_link1</child>
+      <!-- 定义旋转轴和极限 -->
       <axis>
-        <xyz>0 0 1</xyz>
+        <xyz>0 0 1</xyz> <!-- 绕 Z 轴旋转 -->
         <limit>
-          <lower>-2.9670999999999998</lower>
-          <upper>2.9670999999999998</upper>
-          <effort>87</effort>
-          <velocity>2.3925000000000001</velocity>
+          <lower>-2.9670999999999998</lower> <!-- 最小角度 (弧度) -->
+          <upper>2.9670999999999998</upper> <!-- 最大角度 -->
+          <effort>87</effort>             <!-- 最大力矩 (Nm) -->
+          <velocity>2.3925000000000001</velocity> <!-- 最大速度 (rad/s) -->
         </limit>
         <dynamics>
           <spring_reference>0</spring_reference>
@@ -531,8 +549,19 @@
     <frame name='panda_link8' attached_to='panda_joint8'>
       <pose>0 0 0 0 0 0</pose>
     </frame>
-<plugin filename='gz-sim-joint-state-publisher-system' name='gz::sim::systems::JointStatePublisher'></plugin>
+    <!-- ========================================================================= -->
+    <!-- Plugins: 世界/模型插件 -->
+    <!-- 这些插件给模型赋予了“超能力”，比如发布关节状态或响应控制命令。 -->
+    <!-- ========================================================================= -->
+    
+    <!-- JointStatePublisher: 负责把每个关节的实时角度发布到 Gazebo Transport 话题上。 -->
+    <!-- 这样 ros_gz_bridge 才能获取数据并转发给 ROS。 -->
+    <plugin filename='gz-sim-joint-state-publisher-system' name='gz::sim::systems::JointStatePublisher'></plugin>
 
+    <!-- JointPositionController: 关节位置控制器 -->
+    <!-- 每个关节都需要一个控制器插件，用来接收目标位置命令，并输出力矩驱动关节运动。 -->
+    <!-- topic: 监听的控制命令话题 (Gazebo Transport) -->
+    <!-- p_gain/i_gain/d_gain: PID 控制参数，决定了运动有多“硬”或多“软”。 -->
     <plugin filename='gz-sim-joint-position-controller-system' name='gz::sim::systems::JointPositionController'>
       <joint_name>panda_joint1</joint_name>
       <topic>/panda/joint1/cmd_pos</topic>
