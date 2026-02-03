@@ -1,0 +1,40 @@
+# controllers.yaml
+# ros2_control 控制器配置文件
+#
+# 这个文件定义了:
+# 1. Controller Manager 的配置
+# 2. 要加载的控制器列表
+# 3. 每个控制器的参数
+
+# Controller Manager 配置
+controller_manager:
+  ros__parameters:
+    # 更新频率 (Hz)
+    # 这决定了 read() 和 write() 的调用频率
+    update_rate: 100
+
+    # 要加载的控制器列表
+    # joint_state_broadcaster: 发布 /joint_states 话题
+    # forward_position_controller: 直接转发位置命令
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+
+    forward_position_controller:
+      type: forward_command_controller/ForwardCommandController
+
+# Joint State Broadcaster 配置
+# 这个控制器读取关节状态，发布到 /joint_states 话题
+joint_state_broadcaster:
+  ros__parameters:
+    # 无需特殊配置
+
+# Forward Position Controller 配置
+# 这个控制器接收位置命令，直接转发给硬件
+forward_position_controller:
+  ros__parameters:
+    # 要控制的关节列表
+    joints:
+      - joint1
+
+    # 接口类型：位置
+    interface_name: position

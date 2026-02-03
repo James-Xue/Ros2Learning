@@ -1,0 +1,80 @@
+<?xml version="1.0"?>
+<!--
+  simple_joint.urdf.xacro
+  极简的单关节机器人 URDF
+
+  这个文件定义了:
+  1. 一个固定的 base_link
+  2. 一个可旋转的 joint1
+  3. 一个移动的 link1
+  4. ros2_control 配置（使用我们自己的 Hardware Interface）
+-->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="simple_joint_robot">
+
+  <!-- ============================================================ -->
+  <!-- 机器人结构定义 -->
+  <!-- ============================================================ -->
+
+  <!-- 基座链接（固定在世界坐标系） -->
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <box size="0.1 0.1 0.1"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- 关节：连接 base_link 和 link1 -->
+  <joint name="joint1" type="revolute">
+    <parent link="base_link"/>
+    <child link="link1"/>
+    <origin xyz="0 0 0.1" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+    <limit lower="-3.14" upper="3.14" effort="10" velocity="1"/>
+  </joint>
+
+  <!-- 移动链接 -->
+  <link name="link1">
+    <visual>
+      <origin xyz="0.15 0 0"/>
+      <geometry>
+        <box size="0.3 0.05 0.05"/>
+      </geometry>
+      <material name="blue">
+        <color rgba="0 0 0.8 1"/>
+      </material>
+    </visual>
+  </link>
+
+  <!-- ============================================================ -->
+  <!-- ros2_control 配置 -->
+  <!-- ============================================================ -->
+  <!--
+    这是 ros2_control 的核心配置！
+    它告诉 ros2_control:
+    1. 使用哪个 Hardware Interface 插件
+    2. 有哪些关节
+    3. 每个关节支持哪些接口（位置/速度/力矩）
+  -->
+  <ros2_control name="SimpleJointSystem" type="system">
+    <!-- 指定 Hardware Interface 插件 -->
+    <hardware>
+      <plugin>ros2_learning_control_demo/SimpleJointHardware</plugin>
+    </hardware>
+
+    <!-- 关节配置 -->
+    <joint name="joint1">
+      <!-- 命令接口：控制器可以发送位置命令 -->
+      <command_interface name="position"/>
+
+      <!-- 状态接口：控制器可以读取当前位置 -->
+      <state_interface name="position">
+        <param name="initial_value">0.0</param>
+      </state_interface>
+    </joint>
+  </ros2_control>
+
+</robot>

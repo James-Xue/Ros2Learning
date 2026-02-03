@@ -1,0 +1,9 @@
+<library path="simple_joint_hardware">
+  <class name="ros2_learning_control_demo/SimpleJointHardware"
+         type="ros2_learning_control_demo::SimpleJointHardware"
+         base_class_type="hardware_interface::SystemInterface">
+    <description>
+      极简的单关节 Mock Hardware Interface 示例
+    </description>
+  </class>
+</library>
