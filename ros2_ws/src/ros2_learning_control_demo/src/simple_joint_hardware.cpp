@@ -1,3 +1,17 @@
+// Copyright 2026 user
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 /**
  * @file simple_joint_hardware.cpp
  * @brief 极简的 ros2_control Hardware Interface 实现
@@ -36,14 +50,13 @@ hardware_interface::CallbackReturn SimpleJointHardware::on_init(
 {
   // 调用父类的 on_init，它会解析 URDF 中的 <ros2_control> 配置
   if (hardware_interface::SystemInterface::on_init(info) !=
-      hardware_interface::CallbackReturn::SUCCESS)
+    hardware_interface::CallbackReturn::SUCCESS)
   {
     return hardware_interface::CallbackReturn::ERROR;
   }
 
   // 检查关节数量（我们的示例只支持一个关节）
-  if (info_.joints.size() != 1)
-  {
+  if (info_.joints.size() != 1) {
     RCLCPP_ERROR(getLogger(), "SimpleJointHardware 只支持单个关节，但配置了 %zu 个关节",
       info_.joints.size());
     return hardware_interface::CallbackReturn::ERROR;
