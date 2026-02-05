@@ -148,8 +148,7 @@ public:
    * @param period 距上次调用的时间间隔
    * @return 读取是否成功
    */
-  hardware_interface::return_type read(
-    const rclcpp::Time & time,
+  hardware_interface::return_type read(const rclcpp::Time & time,
     const rclcpp::Duration & period) override;
 
   /**
@@ -162,8 +161,7 @@ public:
    * @param period 距上次调用的时间间隔
    * @return 写入是否成功
    */
-  hardware_interface::return_type write(
-    const rclcpp::Time & time,
+  hardware_interface::return_type write(const rclcpp::Time & time,
     const rclcpp::Duration & period) override;
 
 private:

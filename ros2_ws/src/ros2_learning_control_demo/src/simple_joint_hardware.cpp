@@ -56,7 +56,8 @@ hardware_interface::CallbackReturn SimpleJointHardware::on_init(
   }
 
   // 检查关节数量（我们的示例只支持一个关节）
-  if (info_.joints.size() != 1) {
+  if (info_.joints.size() != 1)
+  {
     RCLCPP_ERROR(getLogger(), "SimpleJointHardware 只支持单个关节，但配置了 %zu 个关节",
       info_.joints.size());
     return hardware_interface::CallbackReturn::ERROR;
@@ -85,8 +86,8 @@ SimpleJointHardware::export_state_interfaces()
       m_jointName,
       hardware_interface::HW_IF_POSITION,
       &m_position
-    )
-  );
+      )
+    );
 
   RCLCPP_INFO(getLogger(), "导出状态接口: %s/%s",
     m_jointName.c_str(), hardware_interface::HW_IF_POSITION);
@@ -109,8 +110,8 @@ SimpleJointHardware::export_command_interfaces()
       m_jointName,
       hardware_interface::HW_IF_POSITION,
       &m_positionCommand
-    )
-  );
+      )
+    );
 
   RCLCPP_INFO(getLogger(), "导出命令接口: %s/%s",
     m_jointName.c_str(), hardware_interface::HW_IF_POSITION);
@@ -145,8 +146,7 @@ hardware_interface::CallbackReturn SimpleJointHardware::on_deactivate(
 // ============================================================
 // read: 从硬件读取状态
 // ============================================================
-hardware_interface::return_type SimpleJointHardware::read(
-  const rclcpp::Time & /*time*/,
+hardware_interface::return_type SimpleJointHardware::read(const rclcpp::Time & /*time*/,
   const rclcpp::Duration & period)
 {
   // 在真实硬件中，这里会从编码器读取当前位置
@@ -170,8 +170,7 @@ hardware_interface::return_type SimpleJointHardware::read(
 // ============================================================
 // write: 向硬件写入命令
 // ============================================================
-hardware_interface::return_type SimpleJointHardware::write(
-  const rclcpp::Time & /*time*/,
+hardware_interface::return_type SimpleJointHardware::write(const rclcpp::Time & /*time*/,
   const rclcpp::Duration & /*period*/)
 {
   // 在真实硬件中，这里会向电机驱动器发送控制指令
@@ -191,4 +190,4 @@ hardware_interface::return_type SimpleJointHardware::write(
 PLUGINLIB_EXPORT_CLASS(
   ros2_learning_control_demo::SimpleJointHardware,
   hardware_interface::SystemInterface
-)
+  )
