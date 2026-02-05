@@ -84,9 +84,24 @@ def generate_launch_description():
         output='screen',
     )
 
+    # ============================================================
+    # 可视化工具
+    # ============================================================
+    
+    # RViz2: 3D 可视化
+    rviz_config_file = PathJoinSubstitution([pkg_share, 'rviz', 'demo.rviz'])
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_file],
+    )
+
     return LaunchDescription([
         robot_state_publisher,
         controller_manager,
         joint_state_broadcaster_spawner,
         forward_position_controller_spawner,
+        rviz_node,
     ])
