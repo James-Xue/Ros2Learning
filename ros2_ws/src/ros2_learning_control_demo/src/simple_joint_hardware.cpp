@@ -46,10 +46,10 @@ static rclcpp::Logger getLogger()
 // on_init: 初始化硬件接口
 // ============================================================
 hardware_interface::CallbackReturn SimpleJointHardware::on_init(
-  const hardware_interface::HardwareInfo & info)
+  const hardware_interface::HardwareComponentInterfaceParams & params)
 {
   // 调用父类的 on_init，它会解析 URDF 中的 <ros2_control> 配置
-  if (hardware_interface::SystemInterface::on_init(info) !=
+  if (hardware_interface::SystemInterface::on_init(params) !=
     hardware_interface::CallbackReturn::SUCCESS)
   {
     return hardware_interface::CallbackReturn::ERROR;

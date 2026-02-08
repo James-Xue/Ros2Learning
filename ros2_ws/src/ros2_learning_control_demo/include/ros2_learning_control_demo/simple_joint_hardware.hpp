@@ -98,7 +98,7 @@ public:
    * @return 初始化是否成功
    */
   hardware_interface::CallbackReturn on_init(
-    const hardware_interface::HardwareInfo & info) override;
+    const hardware_interface::HardwareComponentInterfaceParams & params) override;
 
   // ============================================================
   // 接口导出
