@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!-- 
+    树的根节点
+    main_tree_to_execute: 指定程序启动时要运行哪一棵树（因为一个文件可以定义多棵树）
+-->
+<root main_tree_to_execute="MainTree">
+    <BehaviorTree ID="MainTree">
+       <!-- 
+           Sequence (顺序节点):
+           - 只有当子节点返回 SUCCESS 时，才执行下一个。
+           - 只要有一个子节点返回 FAILURE，Sequence 立刻返回 FAILURE。
+           - 如果子节点返回 RUNNING，Sequence 也返回 RUNNING (等待下一帧)。
+           
+           这就像是一个严格的“待办事项清单”，必须按顺序做完。
+       -->
+       <Sequence name="patrol_and_pick">
+          <!-- 1. 移动到抓取点 (假设坐标 [1.0, 0.0]) -->
+          <MoveBase goal_x="1.0" goal_y="0.0" goal_yaw="0.0" />
+          
+          <!-- 2. 模拟机械臂动作 (移动到 1.57 rad) -->
+          <SimpleArmAction target_joint_angle="1.57" />
+          
+          <!-- 3. 移动到投放点 (假设坐标 [0.0, 0.0]) -->
+          <MoveBase goal_x="0.0" goal_y="0.0" goal_yaw="3.14" />
+          
+          <!-- 4. 模拟机械臂复位 -->
+          <SimpleArmAction target_joint_angle="0.0" />
+       </Sequence>
+    </BehaviorTree>
+</root>
