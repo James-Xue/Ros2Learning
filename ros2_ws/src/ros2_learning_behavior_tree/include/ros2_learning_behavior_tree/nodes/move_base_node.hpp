@@ -52,6 +52,9 @@ private:
   GoalHandleNav::SharedPtr goal_handle_;
 
   std::optional<BT::NodeStatus> nav_result_status_;
+
+  // 处理导航结果的回调函数
+  void result_callback(const GoalHandleNav::WrappedResult & result);
 };
 
 }  // namespace ros2_learning_behavior_tree

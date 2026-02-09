@@ -53,25 +53,28 @@ BT::NodeStatus MoveBase::onStart()
   auto send_goal_options = rclcpp_action::Client<NavigateToPose>::SendGoalOptions();
 
   send_goal_options.result_callback =
-    [this](const GoalHandleNav::WrappedResult & result) {
-      if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
-        RCLCPP_INFO(node_->get_logger(), "MoveBase: 导航成功到达！");
-        nav_result_status_ = BT::NodeStatus::SUCCESS;
-      } else if (result.code == rclcpp_action::ResultCode::ABORTED) {
-        RCLCPP_WARN(node_->get_logger(), "MoveBase: 导航被中止 (Aborted)");
-        nav_result_status_ = BT::NodeStatus::FAILURE;
-      } else if (result.code == rclcpp_action::ResultCode::CANCELED) {
-        RCLCPP_WARN(node_->get_logger(), "MoveBase: 导航被取消 (Canceled)");
-        nav_result_status_ = BT::NodeStatus::FAILURE;
-      } else {
-        RCLCPP_ERROR(node_->get_logger(), "MoveBase: 导航失败 (Unknown)");
-        nav_result_status_ = BT::NodeStatus::FAILURE;
-      }
-    };
+      std::bind(&MoveBase::result_callback, this, std::placeholders::_1);
 
   future_goal_handle_ = action_client_->async_send_goal(goal_msg, send_goal_options);
 
   return BT::NodeStatus::RUNNING;
+}
+
+void MoveBase::result_callback(const GoalHandleNav::WrappedResult & result)
+{
+  if (result.code == rclcpp_action::ResultCode::SUCCEEDED) {
+    RCLCPP_INFO(node_->get_logger(), "MoveBase: 导航成功到达！");
+    nav_result_status_ = BT::NodeStatus::SUCCESS;
+  } else if (result.code == rclcpp_action::ResultCode::ABORTED) {
+    RCLCPP_WARN(node_->get_logger(), "MoveBase: 导航被中止 (Aborted)");
+    nav_result_status_ = BT::NodeStatus::FAILURE;
+  } else if (result.code == rclcpp_action::ResultCode::CANCELED) {
+    RCLCPP_WARN(node_->get_logger(), "MoveBase: 导航被取消 (Canceled)");
+    nav_result_status_ = BT::NodeStatus::FAILURE;
+  } else {
+    RCLCPP_ERROR(node_->get_logger(), "MoveBase: 导航失败 (Unknown)");
+    nav_result_status_ = BT::NodeStatus::FAILURE;
+  }
 }
 
 BT::NodeStatus MoveBase::onRunning()
