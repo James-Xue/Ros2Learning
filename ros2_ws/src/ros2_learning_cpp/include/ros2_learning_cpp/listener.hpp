@@ -4,12 +4,16 @@
 
 #include "rclcpp/rclcpp.hpp"
 #include "std_msgs/msg/string.hpp"
+#include "rclcpp_components/register_node_macro.hpp"
 
-class ListenerNode : public rclcpp::Node
+namespace ros2_learning_cpp
 {
-  public:
-    ListenerNode();
+    class ListenerNode : public rclcpp::Node
+    {
+    public:
+        explicit ListenerNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
 
-  private:
-    rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
-};
+    private:
+        rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+    };
+}
