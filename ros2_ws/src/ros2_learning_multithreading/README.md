@@ -21,7 +21,7 @@
 | **Reentrant**<br/>（可重入组） | ✅ 全力并发 | 只要有空闲线程，组内外回调随意跑 | 耗时任务、解决死锁 |
 
 > [!IMPORTANT]
-> **可重入 (Reentrant) 的含义**：甚至允许**同一个回调函数**被多个线程同时进入执行（例如定时器触发频率高于执行速度时）。详细解析见 [REENTRANT_EXPLAINED.md](./REENTRANT_EXPLAINED.md) 镜像文档。
+> **可重入 (Reentrant) 的含义**：甚至允许**同一个回调函数**被多个线程同时进入执行（例如定时器触发频率高于执行速度时）。详细解析见 [doc/REENTRANT_EXPLAINED.md](./doc/REENTRANT_EXPLAINED.md) 镜像文档。
 
 > [!IMPORTANT]
 > **关键规则**：即使使用 `MultiThreadedExecutor`，**同一个 MutuallyExclusive 组内的回调仍然会串行执行**。要实现真正的并发，必须将回调分配到**不同的互斥组**或**可重入组**。
@@ -32,6 +32,9 @@
 
 ```
 ros2_learning_multithreading/
+├── doc/                           # 📚 详细学习文档
+│   ├── REENTRANT_EXPLAINED.md      # 可重入性深度解析
+│   └── ros2_execution_architecture.md # 执行架构 (Executor/Group/Callback)
 ├── include/ros2_learning_multithreading/
 │   └── blocking_node.hpp          # 演示节点头文件
 ├── src/
@@ -247,6 +250,8 @@ imu_sub_ = create_subscription(..., parallel_group);
 
 - [ROS 2 官方文档 - Executors](https://docs.ros.org/en/rolling/Concepts/About-Executors.html)
 - [ROS 2 Callback Groups 教程](https://docs.ros.org/en/rolling/How-To-Guides/Using-callback-groups.html)
+- [本项目详细解析 - 执行架构](./doc/ros2_execution_architecture.md)
+- [本项目详细解析 - 可重入性](./doc/REENTRANT_EXPLAINED.md)
 - 本项目的学习路线图：[`../ros2_learning_behavior_tree/docs/bt_learning_roadmap.md`](../ros2_learning_behavior_tree/docs/bt_learning_roadmap.md)
 
 ---
