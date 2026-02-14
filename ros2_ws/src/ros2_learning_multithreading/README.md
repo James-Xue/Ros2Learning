@@ -260,3 +260,338 @@ imu_sub_ = create_subscription(..., parallel_group);
 - 为机器人系统设计高效的并发架构
 - 避免实时任务被阻塞
 - 充分利用多核 CPU 的性能
+
+---
+
+## 🏛️ 设计模式深度分析：控制反转（IoC）
+
+> [!NOTE]
+> **这一节从软件工程的角度深入分析 ROS 2 Executor 的设计哲学。理解这些设计原则，不仅能帮你更好地使用 ROS 2，还能提升整体的软件架构能力。**
+
+### 什么是控制反转（Inversion of Control）？
+
+**传统控制流**：你的代码**主动调用**框架或库的功能。
+```cpp
+// 传统模式：你控制一切
+MyThread thread;
+thread.start();      // 你主动启动
+thread.doWork();     // 你主动调用
+thread.stop();       // 你主动停止
+```
+
+**控制反转**：框架**调用**你的代码，你只需要**注册**自己的行为。
+```cpp
+// IoC 模式：框架控制执行流
+Framework framework;
+framework.registerCallback(myCallback);  // 你只注册
+framework.run();                         // 框架决定何时调用你的代码
+```
+
+---
+
+### ROS 2 Executor 中的 IoC 体现
+
+#### 控制流对比
+
+```mermaid
+graph TD
+    subgraph 传统模式
+        A1[你的 main 函数] -->|创建| B1[线程 1]
+        A1 -->|创建| C1[线程 2]
+        A1 -->|管理| D1[互斥锁]
+        A1 -->|协调| E1[ROS 回调]
+        B1 --> F1[执行任务]
+        C1 --> F1
+    end
+    
+    subgraph IoC 模式
+        A2[你的 main 函数] -->|注册| B2[CallbackGroup]
+        B2 -->|声明规则| C2[Executor]
+        C2 -->|创建| D2[线程池]
+        C2 -->|调度| E2[你的回调]
+        D2 --> E2
+    end
+```
+
+**关键区别**：
+- **传统**：你 → 创建线程 → 调用函数
+- **IoC**：你 → 注册回调 → 框架调用你
+
+---
+
+### 为什么 ROS 2 选择 IoC？
+
+#### 1️⃣ **简化用户代码（降低认知负担）**
+
+**传统多线程编程的复杂度**：
+```cpp
+// 你需要管理的东西：
+✓ 线程创建/销毁
+✓ 互斥锁（mutex）
+✓ 条件变量（condition variable）
+✓ 死锁检测
+✓ 资源竞争
+✓ 线程安全的数据结构
+✓ 线程生命周期管理
+```
+
+**IoC 后的简化**：
+```cpp
+// 你只需要：
+✓ 声明回调组类型
+✓ 写回调函数
+```
+
+**代码量对比**：
+| 模型 | 线程管理代码 | 业务逻辑代码 | 总行数 |
+|---|---|---|---|
+| 传统 | ~50 行 | ~20 行 | ~70 行 |
+| IoC | ~3 行 | ~20 行 | ~23 行 |
+
+---
+
+#### 2️⃣ **统一调度策略**
+
+**传统模式的问题**：
+```cpp
+// 每个开发者自己管理线程
+NodeA::NodeA() {
+    thread1_ = std::thread(...);  // 优先级？
+    thread2_ = std::thread(...);  // CPU 亲和性？
+}
+
+NodeB::NodeB() {
+    worker_ = std::thread(...);   // 和 NodeA 冲突了？
+}
+```
+结果：系统级的资源竞争，难以调优。
+
+**IoC 模式的优势**：
+```cpp
+// 所有节点的回调统一由 Executor 管理
+MultiThreadedExecutor executor(num_threads, priority_settings);
+executor.add_node(node_a);  // 统一调度
+executor.add_node(node_b);  // 统一调度
+executor.spin();
+```
+结果：全局最优的调度策略。
+
+---
+
+#### 3️⃣ **可测试性**
+
+**传统模式**：
+```cpp
+// 难以测试
+class MyNode {
+    std::thread worker_;  // 测试时很难 mock 线程行为
+};
+
+// 测试代码
+TEST(MyNode, WorkerBehavior) {
+    MyNode node;
+    // ❌ 如何验证 worker_ 的行为？需要真实的线程
+}
+```
+
+**IoC 模式**：
+```cpp
+// 容易测试
+class MyNode {
+    void on_timer() { /* 纯函数 */ }
+};
+
+// 测试代码
+TEST(MyNode, TimerCallback) {
+    MyNode node;
+    node.on_timer();  // ✅ 直接调用，不需要线程
+}
+```
+
+---
+
+#### 4️⃣ **扩展性**
+
+**传统模式**：如果要改变并发策略（如加优先级调度），需要修改每个节点。
+
+**IoC 模式**：只需替换 Executor。
+```cpp
+// 原来
+MultiThreadedExecutor executor;
+
+// 改为优先级调度（假设有这样的 Executor）
+PriorityExecutor executor(priority_config);
+// 节点代码完全不变！
+```
+
+---
+
+### 设计模式分类
+
+ROS 2 Executor 实际上组合了多种设计模式：
+
+#### 1️⃣ **Hollywood 原则（"Don't call us, we'll call you"）**
+```cpp
+// 你不调用框架，框架调用你
+class MyNode {
+    void callback() {  // 框架会调这个函数
+        // 你的逻辑
+    }
+};
+```
+
+#### 2️⃣ **策略模式（Strategy Pattern）**
+```cpp
+// 不同的回调组 = 不同的并发策略
+MutuallyExclusive → 策略：串行执行
+Reentrant         → 策略：并行执行
+```
+
+#### 3️⃣ **线程池模式（Thread Pool Pattern）**
+```cpp
+// Executor 内部维护线程池
+class MultiThreadedExecutor {
+    std::vector<std::thread> thread_pool_;  // 预创建线程
+    std::queue<Callback> task_queue_;       // 任务队列
+};
+```
+
+#### 4️⃣ **依赖注入（Dependency Injection）**
+```cpp
+// 你不创建 Executor，而是 Executor 被"注入"到执行流程
+MultiThreadedExecutor executor;
+executor.add_node(node);  // 注入节点
+executor.spin();          // 执行器决定如何运行
+```
+
+---
+
+### 权衡与代价
+
+#### ✅ 优势
+
+| 维度 | 具体表现 |
+|---|---|
+| **易用性** | 大幅降低多线程编程门槛 |
+| **一致性** | 所有 ROS 2 节点遵循统一的并发模型 |
+| **可维护性** | 框架升级可以改进调度策略，用户代码无需修改 |
+| **安全性** | 减少死锁、资源泄漏等常见错误 |
+
+#### ❌ 代价
+
+| 维度 | 具体影响 |
+|---|---|
+| **灵活性损失** | 无法精确控制线程（如 CPU 亲和性） |
+| **学习曲线** | 需要理解 Executor 和 CallbackGroup 的概念 |
+| **调试复杂度** | 线程由框架创建，调试时需要理解框架行为 |
+| **性能开销** | 框架调度有额外开销（通常可忽略） |
+
+---
+
+### 何时打破 IoC？
+
+在某些特殊场景下，你可能需要手动管理线程：
+
+#### 场景 1：硬件驱动（高频轮询）
+```cpp
+class MotorDriver {
+    std::thread control_loop_;
+    
+    void hardware_loop() {
+        while (running_) {
+            // 10kHz 控制循环
+            read_encoder();
+            write_pwm();
+            std::this_thread::sleep_for(100us);
+        }
+    }
+};
+```
+**原因**：Executor 的调度延迟可能无法满足微秒级实时性。
+
+#### 场景 2：第三方库要求
+```cpp
+class CameraDriver {
+    // 相机 SDK 要求在独立线程中初始化
+    std::thread sdk_thread_;
+};
+```
+
+#### 场景 3：长时间阻塞 I/O
+```cpp
+class DatabaseLogger {
+    std::thread db_writer_;
+    
+    void writer_loop() {
+        while (running_) {
+            auto data = queue_.pop();
+            database.write(data);  // 可能阻塞数秒
+        }
+    }
+};
+```
+**原因**：数据库写入可能阻塞很久，不适合放在 Executor 线程池中。
+
+> [!WARNING]
+> **打破 IoC 的代价**：你需要自己处理线程安全、生命周期管理、与 ROS 2 的协调等问题。
+
+---
+
+### 类比：从餐厅理解 IoC
+
+#### 传统模式（你是全能的店主）
+```
+你的职责：
+├─ 雇佣服务员（创建线程）
+├─ 分配桌号（任务调度）
+├─ 协调后厨和前厅（线程同步）
+├─ 处理冲突（死锁）
+└─ 发工资、管理人事（资源管理）
+```
+**问题**：你要同时做菜（写业务逻辑）和管理餐厅（管理线程），精力分散。
+
+#### IoC 模式（你是专业厨师）
+```
+你的职责：
+└─ 专注做菜（写回调函数）
+
+餐厅经理（Executor）的职责：
+├─ 招聘服务员（创建线程池）
+├─ 分配任务（调度回调）
+├─ 协调运营（线程同步）
+└─ 管理资源（自动清理）
+```
+**优势**：你专注核心业务，管理工作由专业框架处理。
+
+---
+
+### 设计启示
+
+ROS 2 的 IoC 设计给我们的启示：
+
+1. **分离关注点**：业务逻辑（回调函数）vs 执行策略（Executor）
+2. **声明式编程**：声明"做什么"（CallbackGroup）而非"怎么做"（手动线程）
+3. **最小知识原则**：用户不需要了解底层线程实现
+4. **框架负责复杂度**：把困难的事情交给经过验证的框架
+
+---
+
+### 进一步学习
+
+- **设计模式经典书籍**：《设计模式：可复用面向对象软件的基础》（Gang of Four）
+- **IoC 容器**：Spring Framework（Java），ASP.NET Core（C#）
+- **类似架构**：事件驱动（Event-Driven）、响应式编程（Reactive Programming）
+
+---
+
+### 总结：从设计角度看 Executor
+
+| 设计原则 | ROS 2 Executor 的体现 |
+|---|---|
+| **控制反转** | 框架调用你的代码，而非你调用框架 |
+| **依赖注入** | Executor 被注入到执行流程 |
+| **策略模式** | CallbackGroup 定义了不同的并发策略 |
+| **线程池** | 预创建线程，避免频繁创建/销毁开销 |
+
+**核心思想**：让用户专注高价值的业务逻辑，框架负责底层复杂度。这正是现代软件工程的趋势。
+
