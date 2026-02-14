@@ -11,9 +11,12 @@ namespace ros2_learning_cpp
     class ListenerNode : public rclcpp::Node
     {
     public:
+        // 类型别名，简化代码
+        using SubscriptionPtr = rclcpp::Subscription<std_msgs::msg::String>::SharedPtr;
+
         explicit ListenerNode(const rclcpp::NodeOptions &options = rclcpp::NodeOptions());
 
     private:
-        rclcpp::Subscription<std_msgs::msg::String>::SharedPtr subscription_;
+        SubscriptionPtr subscription_;
     };
 }

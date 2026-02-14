@@ -16,7 +16,7 @@ namespace ros2_learning_cpp
     }
 
     // 1. Configure: Unconfigured -> Inactive
-    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+    TalkerNode::CallbackReturn
     TalkerNode::on_configure(const rclcpp_lifecycle::State &)
     {
         // 创建发布者，但此时它还不会真正发布数据
@@ -36,7 +36,7 @@ namespace ros2_learning_cpp
     }
 
     // 2. Activate: Inactive -> Active
-    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+    TalkerNode::CallbackReturn
     TalkerNode::on_activate(const rclcpp_lifecycle::State &state)
     {
         // 必须调用父类的 on_activate 来激活 LifecyclePublisher
@@ -50,7 +50,7 @@ namespace ros2_learning_cpp
     }
 
     // 3. Deactivate: Active -> Inactive
-    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+    TalkerNode::CallbackReturn
     TalkerNode::on_deactivate(const rclcpp_lifecycle::State &state)
     {
         // 必须调用父类的 on_deactivate 来停用 LifecyclePublisher
@@ -61,7 +61,7 @@ namespace ros2_learning_cpp
     }
 
     // 4. Cleanup: Inactive -> Unconfigured
-    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+    TalkerNode::CallbackReturn
     TalkerNode::on_cleanup(const rclcpp_lifecycle::State &)
     {
         // 销毁发布者和定时器
@@ -73,7 +73,7 @@ namespace ros2_learning_cpp
     }
 
     // 5. Shutdown: Any -> Finalized
-    rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn
+    TalkerNode::CallbackReturn
     TalkerNode::on_shutdown(const rclcpp_lifecycle::State &)
     {
         publisher_.reset();
