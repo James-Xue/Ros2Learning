@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="MainTree">
+    <BehaviorTree ID="MainTree">
+       
+       <!-- Repeat: 重复执行 4 次，刚好把我们队列里的 4 个点走完 -->
+       <Repeat num_cycles="4">
+           <Sequence name="FetchAndGo">
+              
+              <!-- 1. 获取目标点 -->
+              <!-- 
+                   target_location="{next_goal}" 
+                   这意味着：把这个节点输出的 "target_location" 存入黑板变量 "next_goal"
+              -->
+              <GetLocationFromQueue target_location="{next_goal}" />
+
+              <!-- 2. 前往该目标点 -->
+              <!-- 
+                   location="{next_goal}"
+                   这意味着：从黑板变量 "next_goal" 读取值，作为 "location" 输入
+              -->
+              <MockMoveBase location="{next_goal}" probability="0.9" duration="500"/>
+              
+              <!-- 3. 模拟到达后的操作（比如抓取） -->
+              <SimpleArmAction target_joint_angle="1.0" />
+
+           </Sequence>
+       </Repeat>
+
+    </BehaviorTree>
+</root>

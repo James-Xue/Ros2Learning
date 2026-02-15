@@ -1,304 +1,101 @@
-# ROS2 Learning Behavior Tree
+# 🌳 ROS 2 BehaviorTree.CPP Learning Package
 
-这是一个 ROS2 行为树（Behavior Tree）学习示例包，展示了如何使用 **BehaviorTree.CPP** 库与 ROS2 集成，实现复杂的机器人任务规划。
+这是一个用于学习和演示 **BehaviorTree.CPP (v4)** 与 **ROS 2** 集成的示例包。
 
-## 📦 包概述
+本项目展示了从基础的 Action 节点封装，到高级的**控制流 (Control Flow)**、**数据流 (Blackboard)** 以及 **模块化子树 (SubTree)** 的完整实现。
 
-本包实现了一个简单的"巡逻-抓取-投放"任务，结合了：
-- **移动底盘导航**（通过 Nav2 的 `NavigateToPose` Action）
-- **机械臂控制**（模拟的关节运动）
-
-## 🏗️ 核心架构
-
-### BehaviorTree.CPP 集成模式
-
-```
-BehaviorTree.CPP (核心库)
-    ↓
-自定义节点封装 (MoveBase, SimpleArmAction)
-    ↓
-ROS2 接口 (Action Client, Logger)
-```
-
-### 节点类型
-
-| 节点类 | 基类 | 用途 | 执行模式 |
-|--------|------|------|----------|
-| `MoveBase` | `StatefulActionNode` | 导航到目标点 | 异步（支持 RUNNING） |
-| `SimpleArmAction` | `SyncActionNode` | 机械臂运动 | 同步（立即完成） |
+为了方便学习，本项目包含了一组 **Mock (模拟)** 节点，**不需要** 复杂的仿真环境（如 Nav2/Gazebo）即可在终端中运行完整的逻辑验证。
 
 ---
 
-## 📂 项目结构
+## 🚀 功能特性
 
-```
-ros2_learning_behavior_tree/
-├── behavior_trees/           # 行为树 XML 定义
-│   └── simple_patrol.xml     # 巡逻任务树
-├── include/ros2_learning_behavior_tree/nodes/
-│   ├── move_base_node.hpp    # 导航节点头文件
-│   └── simple_arm_action.hpp # 机械臂节点头文件
-├── src/
-│   ├── bt_executor.cpp       # 行为树执行器主程序
-│   └── nodes/                # 节点实现
-│       ├── move_base_node.cpp
-│       └── simple_arm_action.cpp
-├── launch/
-│   └── bt_demo.launch.py     # 启动文件
-├── test/                     # 单元测试
-├── CMakeLists.txt
-└── package.xml
-```
+- **ROS 2 Action 集成**：演示如何将 `rclcpp_action::Client` 封装为 `BT::StatefulActionNode`。
+- **自定义节点**：包含同步节点 (`SyncActionNode`) 和异步节点 (`StatefulActionNode`) 的实现范例。
+- **Mock 仿真环境**：提供纯逻辑的模拟节点，支持概率失败、耗时模拟，用于测试行为树的鲁棒性。
+- **高级特性演示**：
+  - **Fallback (容错)**：导航失败自动重试。
+  - **Blackboard (黑板)**：节点间的数据传递（动态目标点）。
+  - **SubTree (子树)**：行为树的模块化拆分与复用。
 
 ---
 
-## 🎯 核心概念
+## 📦 节点说明
 
-### 1. **行为树节点类型**
+### 1. Mock 节点 (逻辑验证专用)
 
-#### **SyncActionNode（同步节点）**
-- **特点**：`tick()` 必须立即返回 `SUCCESS` 或 `FAILURE`
-- **适用**：瞬时操作（设置参数、简单计算）
-- **示例**：`SimpleArmAction`
+| 节点名 | 类型 | 端口 (Ports) | 说明 |
+| :--- | :--- | :--- | :--- |
+| **`MockMoveBase`** | Stateful | `location` (In), `probability` (In), `duration` (In) | 模拟移动到底座。支持设置成功率 (0.0-1.0) 和耗时。用于测试 Fallback 逻辑。 |
+| **`MockRecovery`** | Stateful | `type` (In), `duration` (In) | 模拟恢复行为（如原地旋转）。 |
+| **`GetLocationFromQueue`** | Sync | `target_location` (Out) | 从内部队列中循环取出一个地点，写入黑板。用于演示数据流。 |
 
-```cpp
-class SimpleArmAction : public BT::SyncActionNode {
-    BT::NodeStatus tick() override {
-        // 快速执行，立即返回
-        return BT::NodeStatus::SUCCESS;
-    }
-};
-```
+### 2. 真实业务节点 (依赖 Nav2)
 
-#### **StatefulActionNode（状态节点）**
-- **特点**：可返回 `RUNNING`，支持多次 tick
-- **适用**：长时任务（导航、等待）
-- **示例**：`MoveBase`
-
-```cpp
-class MoveBase : public BT::StatefulActionNode {
-    BT::NodeStatus onStart() override {
-        // 发起异步任务
-        return BT::NodeStatus::RUNNING;
-    }
-    
-    BT::NodeStatus onRunning() override {
-        // 检查进度
-        if (任务完成) return BT::NodeStatus::SUCCESS;
-        return BT::NodeStatus::RUNNING;
-    }
-    
-    void onHalted() override {
-        // 清理资源
-    }
-};
-```
-
-### 2. **端口系统（Port System）**
-
-端口是行为树节点之间传递数据的接口：
-
-```cpp
-static BT::PortsList providedPorts() {
-    return {
-        BT::InputPort<double>("goal_x", "目标点的 X 坐标"),
-        BT::InputPort<double>("goal_y", "目标点的 Y 坐标"),
-        BT::InputPort<double>("goal_yaw", "目标点的偏航角")
-    };
-}
-```
-
-在 XML 中使用：
-
-```xml
-<!-- 硬编码值 -->
-<MoveBase goal_x="1.0" goal_y="0.0" goal_yaw="0.0"/>
-
-<!-- 从黑板读取 -->
-<MoveBase goal_x="{target_x}" goal_y="{target_y}" goal_yaw="{target_yaw}"/>
-```
-
-### 3. **控制节点**
-
-- **Sequence（序列节点）**：按顺序执行，任意失败则整体失败
-- **Fallback（后备节点）**：按顺序执行，任意成功则整体成功
-- **Parallel（并行节点）**：同时执行多个子节点
+| 节点名 | 类型 | 端口 (Ports) | 说明 |
+| :--- | :--- | :--- | :--- |
+| **`MoveBase`** | Stateful | `goal_x`, `goal_y`, `goal_yaw` (In) | 封装了 Nav2 的 `navigate_to_pose` Action Client。 |
+| **`SimpleArmAction`** | Stateful | `target_joint_angle` (In) | 模拟机械臂动作（此处仅为打桩，预留接口）。 |
 
 ---
 
-## 🚀 快速开始
+## 🛠️ 编译与运行
 
-### 1. **编译包**
+### 1. 编译
 
 ```bash
-cd ~/Ros2Learning/ros2_ws
+cd ~/ros2_ws
 colcon build --packages-select ros2_learning_behavior_tree
 source install/setup.bash
 ```
 
-### 2. **运行示例**
+### 2. 运行演示
 
+本包提供了一个通用的 Launch 文件，可以通过参数加载不同的行为树文件。
+
+#### 🟢 演示 A：模块化与数据流 (推荐)
+演示内容：主树循环调用子树，通过黑板传递动态目标点。
 ```bash
-# 启动行为树节点
-ros2 launch ros2_learning_behavior_tree bt_demo.launch.py
+ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=main_tree_composition.xml
 ```
+*预期行为：机器人依次前往 Kitchen -> Bedroom -> Balcony -> Dock，循环执行。*
 
-### 3. **查看日志**
-
-观察终端输出，您会看到：
+#### 🟠 演示 B：容错机制 (Fallback)
+演示内容：前往一个低成功率的目标点，失败后触发恢复行为，然后重试。
+```bash
+ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=mock_fallback_demo.xml
 ```
-[bt_executor]: MoveBase: 发送导航目标 (1.00, 0.00, 0.00)
-[bt_executor]: MoveBase: 服务器已接收目标，正在执行...
-[bt_executor]: SimpleArmAction: 模拟机械臂移动到 1.57 rad
-[bt_executor]: MoveBase: 导航成功到达！
-```
+*预期行为：尝试前往 "Dangerous Zone" -> 失败 -> 执行 "Spin" 恢复 -> 重试成功。*
 
----
-
-## 📝 示例任务：巡逻-抓取-投放
-
-行为树定义（`simple_patrol.xml`）：
-
-```xml
-<Sequence name="patrol_and_pick">
-    <!-- 1. 导航到抓取点 -->
-    <MoveBase goal_x="1.0" goal_y="0.0" goal_yaw="0.0" />
-    
-    <!-- 2. 机械臂抓取 -->
-    <SimpleArmAction target_joint_angle="1.57" />
-    
-    <!-- 3. 导航到投放点 -->
-    <MoveBase goal_x="0.0" goal_y="0.0" goal_yaw="3.14" />
-    
-    <!-- 4. 机械臂复位 -->
-    <SimpleArmAction target_joint_angle="0.0" />
-</Sequence>
-```
-
-**执行流程：**
-1. 机器人导航到 `(1.0, 0.0)`
-2. 机械臂移动到 1.57 弧度
-3. 机器人返回原点 `(0.0, 0.0)`
-4. 机械臂复位到 0 弧度
-
----
-
-## 🔧 关键技术点
-
-### 1. **ROS Action 的异步集成**
-
-`MoveBase` 展示了如何将异步的 ROS Action 集成到同步的行为树框架中：
-
-```cpp
-// 发送异步请求
-future_goal_handle_ = action_client_->async_send_goal(goal_msg, send_goal_options);
-
-// 非阻塞检查状态
-BT::NodeStatus onRunning() {
-    if (future_goal_handle_.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
-        goal_handle_ = future_goal_handle_.get();
-    }
-    
-    // 从回调中读取结果
-    if (nav_result_status_.has_value()) {
-        return nav_result_status_.value();
-    }
-    
-    return BT::NodeStatus::RUNNING;
-}
-```
-
-### 2. **依赖注入模式**
-
-通过构造函数注入 ROS 节点，实现解耦：
-
-```cpp
-MoveBase(const std::string& name, 
-         const BT::NodeConfig& config,
-         rclcpp::Node::SharedPtr node_ptr)  // ← 外部传入
-: BT::StatefulActionNode(name, config), node_(node_ptr) {
-    action_client_ = rclcpp_action::create_client<NavigateToPose>(node_, "navigate_to_pose");
-}
-```
-
-### 3. **节点注册到 BT 工厂**
-
-```cpp
-BT::BehaviorTreeFactory factory;
-
-// 使用 lambda 传递 ROS 节点
-factory.registerNodeType<MoveBase>(
-    "MoveBase",
-    [node](const std::string& name, const BT::NodeConfig& config) {
-        return std::make_unique<MoveBase>(name, config, node);
-    }
-);
+#### 🔵 演示 C：基础巡逻
+演示内容：最简单的顺序执行任务。
+```bash
+ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=simple_patrol.xml
 ```
 
 ---
 
-## 🎓 学习路径
+## 📂 文件结构
 
-### 初级
-1. ✅ 理解行为树基本概念（Sequence、Fallback、Action）
-2. ✅ 运行本示例，观察执行流程
-3. ✅ 修改 XML 文件，调整任务顺序
-
-### 中级
-4. ⚡ 实现自定义 `SyncActionNode`（如发布消息）
-5. ⚡ 实现自定义 `ConditionNode`（如检查电池电量）
-6. ⚡ 使用黑板系统传递数据
-
-### 高级
-7. 🚀 实现带超时的导航节点
-8. 🚀 添加错误恢复逻辑（Fallback）
-9. 🚀 实现复杂的多机器人协作任务
-
----
-
-## 📚 依赖项
-
-```xml
-<depend>rclcpp</depend>
-<depend>rclcpp_action</depend>
-<depend>behaviortree_cpp</depend>
-<depend>nav2_msgs</depend>
-<depend>geometry_msgs</depend>
-<depend>tf2</depend>
-<depend>tf2_ros</depend>
+```text
+.
+├── behavior_trees/              # XML 行为树文件
+│   ├── main_tree_composition.xml  # [主树] 演示 SubTree 和 Blackboard
+│   ├── fetch_subtree.xml          # [子树] 被主树调用
+│   ├── mock_fallback_demo.xml     # [演示] 演示 Fallback 容错
+│   └── simple_patrol.xml          # [演示] 基础巡逻
+├── include/.../nodes/           # C++ 头文件 (拆分规范)
+│   ├── mock_move_base.hpp
+│   ├── mock_recovery.hpp
+│   ├── get_location_from_queue.hpp
+│   └── ...
+├── src/
+│   ├── bt_main.cpp              # 主程序 (Factory 注册与 Tick 循环)
+│   └── nodes/                   # 节点实现
+└── launch/
+    └── bt_demo.launch.py        # 启动脚本
 ```
 
----
+## 📝 学习笔记
 
-## 🐛 常见问题
-
-### Q1: 行为树一直返回 FAILURE？
-**A**: 检查 Nav2 是否启动，`MoveBase` 需要 `navigate_to_pose` Action Server。
-
-### Q2: 如何调试行为树？
-**A**: 使用 `RCLCPP_INFO` 在关键位置打印日志，或使用 Groot 可视化工具。
-
-### Q3: SyncActionNode vs StatefulActionNode 如何选择？
-**A**: 
-- 任务耗时 < 100ms → `SyncActionNode`
-- 任务耗时 > 100ms 或需要异步操作 → `StatefulActionNode`
-
----
-
-## 📖 参考资源
-
-- [BehaviorTree.CPP 官方文档](https://www.behaviortree.dev/)
-- [Nav2 Behavior Trees](https://navigation.ros.org/behavior_trees/index.html)
-- [ROS2 Actions 教程](https://docs.ros.org/en/jazzy/Tutorials/Beginner-CLI-Tools/Understanding-ROS2-Actions/Understanding-ROS2-Actions.html)
-
----
-
-## 📄 License
-
-Apache-2.0
-
----
-
-**作者**: ROS2 学习示例  
-**维护者**: user@todo.todo  
-**版本**: 0.0.1
+详细的学习路线图请参考：[docs/bt_learning_roadmap.md](docs/bt_learning_roadmap.md)

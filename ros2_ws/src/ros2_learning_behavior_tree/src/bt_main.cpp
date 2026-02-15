@@ -8,6 +8,9 @@
 // 引入我们的自定义节点
 #include "ros2_learning_behavior_tree/nodes/move_base_node.hpp"
 #include "ros2_learning_behavior_tree/nodes/simple_arm_action.hpp"
+#include "ros2_learning_behavior_tree/nodes/mock_move_base.hpp"
+#include "ros2_learning_behavior_tree/nodes/mock_recovery.hpp"
+#include "ros2_learning_behavior_tree/nodes/get_location_from_queue.hpp"
 
 // 使用 ament_index_cpp 来查找 share 目录（如果不硬编码路径的话）
 #include "ament_index_cpp/get_package_share_directory.hpp"
@@ -27,36 +30,57 @@ int main(int argc, char ** argv)
   BT::BehaviorTreeFactory factory;
 
   // 3. 注册我们的自定义节点
-  // 知识点：
-  // - registerBuilder: 用于注册需要复杂构造函数（如需要传入 ros_node）的节点。
-  // - registerNodeType: 用于注册默认构造函数的简单节点。
-
-  // 注册 MoveBase (Nav2 客户端)
-  factory.registerBuilder<MoveBase>(
-    "MoveBase", // XML 中的标签名 <MoveBase ...>
+  
+  // --- 真实节点 ---
+  factory.registerBuilder<MoveBase>("MoveBase", 
     [node](const std::string & name, const BT::NodeConfig & config) {
-      // 在这里我们将 ROS 节点指针注入到 BT 节点中
       return std::make_unique<MoveBase>(name, config, node);
     });
 
-  // 注册 SimpleArmAction (机械臂模拟)
-  factory.registerBuilder<SimpleArmAction>(
-    "SimpleArmAction",
+  factory.registerBuilder<SimpleArmAction>("SimpleArmAction",
     [node](const std::string & name, const BT::NodeConfig & config) {
       return std::make_unique<SimpleArmAction>(name, config, node);
     });
 
-  // 4. 确定 XML 文件路径
-  // 我们使用 ament_index_cpp 找到安装后的 share 目录，确保在任何目录下运行都能找到文件
-  std::string pkg_share =
-    ament_index_cpp::get_package_share_directory("ros2_learning_behavior_tree");
-  std::string xml_path = pkg_share + "/behavior_trees/simple_patrol.xml";
+  // --- Mock 节点 ---
+  factory.registerBuilder<MockMoveBase>("MockMoveBase",
+    [node](const std::string & name, const BT::NodeConfig & config) {
+      return std::make_unique<MockMoveBase>(name, config, node);
+    });
 
-  RCLCPP_INFO(node->get_logger(), "正在加载行为树文件: %s", xml_path.c_str());
+  factory.registerBuilder<MockRecovery>("MockRecovery",
+    [node](const std::string & name, const BT::NodeConfig & config) {
+      return std::make_unique<MockRecovery>(name, config, node);
+    });
 
-  // 5. 创建树 (Instantiation)
-  // 工厂会解析 XML，并根据注册的构建器创建所有节点对象
-  auto tree = factory.createTreeFromFile(xml_path);
+  // 现在 GetLocationFromQueue 也需要节点指针了，所以要用 registerBuilder
+  factory.registerBuilder<GetLocationFromQueue>("GetLocationFromQueue",
+    [node](const std::string & name, const BT::NodeConfig & config) {
+      return std::make_unique<GetLocationFromQueue>(name, config, node);
+    });
+
+  // 4. 加载行为树文件
+  // 声明参数 tree_file，允许通过 launch 文件修改要运行的树
+  node->declare_parameter("tree_file", "main_tree_composition.xml");
+  std::string tree_file = node->get_parameter("tree_file").as_string();
+
+  std::string pkg_share = ament_index_cpp::get_package_share_directory("ros2_learning_behavior_tree");
+  
+  // 注册子树 (固定依赖)
+  std::string subtree_path = pkg_share + "/behavior_trees/fetch_subtree.xml";
+  factory.registerBehaviorTreeFromFile(subtree_path);
+  RCLCPP_INFO(node->get_logger(), "已注册子树: %s", subtree_path.c_str());
+
+  // 注册主树 (动态选择)
+  std::string main_tree_path = pkg_share + "/behavior_trees/" + tree_file;
+  RCLCPP_INFO(node->get_logger(), "正在加载主树: %s", main_tree_path.c_str());
+  
+  // 这里我们假设所有的主树文件都包含一个 ID 为 "MainTree" 的树
+  // 如果你想更灵活，可以解析 XML 获取 ID，或者参数化 TreeID
+  factory.registerBehaviorTreeFromFile(main_tree_path);
+  
+  // 5. 实例化主树
+  auto tree = factory.createTree("MainTree");
 
   // 6. (可选) 添加 Groot2 发布器，用于可视化调试
   // 默认端口 1667。启用后，打开 Groot2 软件 -> Connect 即可看到实时运行状态。

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<root BTCPP_format="4">
+    <!-- 主树 -->
+    <BehaviorTree ID="MainTree">
+       <Repeat num_cycles="4">
+           <!-- 
+               调用子树
+               ID 必须匹配 fetch_subtree.xml 中定义的 ID
+           -->
+           <SubTree ID="FetchSubTree" />
+       </Repeat>
+    </BehaviorTree>
+</root>

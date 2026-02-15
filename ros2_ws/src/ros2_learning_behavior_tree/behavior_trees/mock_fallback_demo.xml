@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<root main_tree_to_execute="MainTree">
+    <BehaviorTree ID="MainTree">
+       <!-- 
+           Sequence: 顺序执行
+           如果中间有环节失败，则整个 Sequence 失败
+       -->
+       <Sequence name="Mission">
+          
+          <!-- 任务 1: 这是一个必定成功的导航 -->
+          <MockMoveBase location="Home" probability="1.0" duration="1000"/>
+
+          <!-- 任务 2: 这是一个危险的导航（只有 30% 成功率），我们需要给它加上容错机制 -->
+          <!-- Fallback (也叫 Selector): 只要有一个子节点成功，它就返回成功 -->
+          <Fallback name="MoveWithRecovery">
+              
+              <!-- 策略 A: 直接尝试去目标点 -->
+              <MockMoveBase location="Dangerous Zone" probability="0.3" duration="1500"/>
+              
+              <!-- 策略 B: 如果 A 失败了，执行恢复行为，然后再试一次 -->
+              <Sequence name="RecoveryStrategy">
+                  <MockRecovery type="Spin" />
+                  <!-- 第二次尝试，我们假设恢复后成功率变高了 -->
+                  <MockMoveBase location="Dangerous Zone (Retry)" probability="1.0" duration="1000"/>
+              </Sequence>
+
+          </Fallback>
+
+          <!-- 任务 3: 最终任务 -->
+          <MockMoveBase location="Charging Station" probability="1.0" duration="500"/>
+
+       </Sequence>
+    </BehaviorTree>
+</root>

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<root BTCPP_format="4">
+    <!-- 
+        子树定义
+        这是一个独立的逻辑单元，可以被其他树调用。
+        
+        注意：在子树内部，黑板变量默认是隔离的（除非通过 remap 映射）。
+        在这里我们使用内部变量 {target}。
+    -->
+    <BehaviorTree ID="FetchSubTree">
+        <Sequence name="FetchAndGoLogic">
+            <!-- 1. 获取目标点 -> 存入局部变量 target -->
+            <GetLocationFromQueue target_location="{target}" />
+
+            <!-- 2. 前往目标 -> 读取局部变量 target -->
+            <MockMoveBase location="{target}" probability="0.9" duration="500"/>
+            
+            <!-- 3. 动作 -->
+            <SimpleArmAction target_joint_angle="1.0" />
+        </Sequence>
+    </BehaviorTree>
+</root>

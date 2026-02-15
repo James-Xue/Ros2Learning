@@ -31,6 +31,9 @@ add_executable(bt_main
   src/bt_main.cpp
   src/nodes/move_base_node.cpp
   src/nodes/simple_arm_action.cpp
+  src/nodes/mock_move_base.cpp
+  src/nodes/mock_recovery.cpp
+  src/nodes/get_location_from_queue.cpp
 )
 
 target_include_directories(bt_main PUBLIC
