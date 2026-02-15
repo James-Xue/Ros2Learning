@@ -11,27 +11,33 @@ SimpleArmAction::SimpleArmAction(
 
 BT::PortsList SimpleArmAction::providedPorts()
 {
+  // 定义输入端口，获取机械臂需要转动的目标角度
   return {BT::InputPort<double>("target_joint_angle", "目标关节角度 (弧度)")};
 }
 
 BT::NodeStatus SimpleArmAction::tick()
 {
+  // 1. 获取输入参数
   double angle = 0.0;
   if (!getInput<double>("target_joint_angle", angle)) {
-    throw BT::RuntimeError("missing required input [target_joint_angle]");
+    throw BT::RuntimeError("SimpleArmAction: 缺少必填参数 [target_joint_angle]");
   }
 
-  RCLCPP_INFO(node_->get_logger(), "SimpleArmAction: 正在将机械臂移动到 %.2f (模拟中)...", angle);
+  // 2. 模拟执行动作
+  RCLCPP_INFO(node_->get_logger(), "SimpleArmAction: 🚀 正在将机械臂移动到角度 %.2f (模拟执行中)...", angle);
 
-  // 注意：这里使用 sleep 仅用于演示“同步阻塞”效果。
-  // 在实际的 Production 代码中，如果动作超过几毫秒，不建议用 SyncActionNode + sleep，
-  // 而应该用 StatefulActionNode + 异步，否则会卡住 BT 的 tick 循环，
-  // 导致其他高优先级节点（如“急停监测”）无法及时响应。
+  // -------------------------------------------------------------------------
+  // 知识点：同步节点的阻塞风险
+  // 警告：这里使用了 sleep_for 模拟 1 秒的执行时间。
+  // 在实际项目代码中，如果动作超过几毫秒且不可预测，绝对不建议在 SyncActionNode 中阻塞！
+  // 这样做会导致整棵行为树在这 1 秒内完全“静止”，无法检查任何更高优先级的条件。
+  // 这种情况下，推荐升级为 StatefulActionNode 并采用异步模式。
+  // -------------------------------------------------------------------------
   rclcpp::sleep_for(std::chrono::seconds(1));
 
-  RCLCPP_INFO(node_->get_logger(), "SimpleArmAction: 机械臂动作完成。");
+  RCLCPP_INFO(node_->get_logger(), "SimpleArmAction: ✅ 机械臂动作已完成。");
 
-  // 返回成功，树会继续执行 Sequence 中的下一个节点
+  // 3. 返回执行成功，由于是 Sequence 的子节点，控制权将交给下一个节点
   return BT::NodeStatus::SUCCESS;
 }
 
