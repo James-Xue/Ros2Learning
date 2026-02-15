@@ -1,8 +1,8 @@
-# 🌳 ROS 2 BehaviorTree.CPP Learning Package
+# ROS 2 BehaviorTree.CPP Learning Package
 
 本项目是一个用于学习和演示 **BehaviorTree.CPP (v4)** 与 **ROS 2** 集成的示例包。
 
-## 📋 运行依赖 (重要)
+## 运行依赖 (重要)
 
 本项目设计了两种运行模式，请根据您的环境选择：
 
@@ -16,7 +16,7 @@
 
 ---
 
-## 🛠️ 编译与安装
+## 编译与安装
 
 ```bash
 cd ~/ros2_ws
@@ -26,7 +26,7 @@ source install/setup.bash
 
 ---
 
-## 🚀 启动演示 (Mock 逻辑验证)
+## 启动演示 (Mock 逻辑验证)
 
 如果您没有运行 Nav2，请务必启动带 `mock` 字样的行为树，否则程序会因找不到 Action Server 而退出。
 
@@ -50,7 +50,7 @@ ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=main_tree_c
 
 ---
 
-## 🛰️ 启动演示 (真实 Nav2 环境)
+## 启动演示 (真实 Nav2 环境)
 
 **注意**：运行以下命令前，请确保您的机器人仿真环境已启动，且 Nav2 节点正常工作。
 
@@ -81,7 +81,7 @@ ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=simple_patr
 
 ---
 
-## 🔍 可视化调试 (Groot2)
+## 可视化调试 (Groot2)
 
 本包已集成 Groot2 发布器。启动任意行为树后，可以使用 Groot2 进行实时监控：
 1. 下载并打开 [Groot2](https://www.behaviortree.dev/groot)。
@@ -90,5 +90,5 @@ ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=simple_patr
 
 ---
 
-## 📝 详细教程
+## 详细教程
 更多概念解释请参考：[docs/bt_learning_roadmap.md](docs/bt_learning_roadmap.md)
