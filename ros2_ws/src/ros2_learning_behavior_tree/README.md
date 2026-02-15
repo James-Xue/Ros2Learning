@@ -60,16 +60,24 @@ ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=simple_patr
 
 ---
 
-## 📂 节点与文件结构
+## � 节点详细说明
 
-本项目通过将节点拆分为 `.hpp` 和 `.cpp` 并在 `bt_main.cpp` 中统一注册，展示了标准的工程化写法。
+本项目采用了 **“接口与实现分离”** 的工程化结构（`.hpp` 定义接口，`.cpp` 编写逻辑），并在 `bt_main.cpp` 中通过工厂模式统一注册。
 
-| 类别 | 节点名 | 说明 |
-| :--- | :--- | :--- |
-| **模拟** | `MockMoveBase` | 模拟移动，可配置耗时与成功率。 |
-| **模拟** | `MockRecovery` | 模拟恢复行为（如 Spin）。 |
-| **模拟** | `GetLocationFromQueue` | 数据生产者，用于演示黑板读写。 |
-| **真实** | `MoveBase` | **Nav2 客户端**，连接真实导航服务器。 |
+### 1. 模拟 (Mock) 节点 - 逻辑测试专用
+
+| 节点名 | 基类 | 端口 (Ports) | 详细逻辑说明 |
+| :--- | :--- | :--- | :--- |
+| **`GetLocationFromQueue`** | `SyncActionNode` | `target_location` (Out) | **生产者**。依次从内部队列（Kitchen, Bedroom...）中取出一个地点名称并写入黑板。当队列遍历完后会自动循环。 |
+| **`MockMoveBase`** | `StatefulActionNode` | `location` (In)<br>`probability` (In)<br>`duration` (In) | **耗时模拟**。根据 `duration` 参数维持 `RUNNING` 状态。倒计时结束后，通过随机数结合 `probability` (0.0~1.0) 决定返回 `SUCCESS` 还是 `FAILURE`。 |
+| **`MockRecovery`** | `StatefulActionNode` | `type` (In)<br>`duration` (In) | **故障恢复**。模拟机器人报错后的恢复动作（如旋转、清理地图）。始终在耗费 `duration` 时长后返回 `SUCCESS`。 |
+
+### 2. 真实 (Real) 节点 - 物理/仿真对接
+
+| 节点名 | 基类 | 端口 (Ports) | 详细逻辑说明 |
+| :--- | :--- | :--- | :--- |
+| **`MoveBase`** | `StatefulActionNode` | `goal_x` (In)<br>`goal_y` (In)<br>`goal_yaw` (In) | **真实导航**。封装了 ROS 2 `navigate_to_pose` 动作客户端。它会异步发送目标位姿，并在导航期间持续汇报 `RUNNING`。 |
+| **`SimpleArmAction`** | `SyncActionNode` | `target_joint_angle` (In) | **动作打桩**。模拟机械臂关节控制。目前仅通过 `rclcpp::Rate` 进行短时间阻塞模拟执行成功。 |
 
 ---
 
