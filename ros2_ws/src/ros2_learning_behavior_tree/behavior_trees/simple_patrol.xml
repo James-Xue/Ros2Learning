@@ -3,7 +3,7 @@
     树的根节点
     main_tree_to_execute: 指定程序启动时要运行哪一棵树（因为一个文件可以定义多棵树）
 -->
-<root main_tree_to_execute="MainTree">
+<root BTCPP_format="4" main_tree_to_execute="MainTree">
     <BehaviorTree ID="MainTree">
        <!-- 
            Sequence (顺序节点):
