@@ -60,7 +60,7 @@ ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=simple_patr
 
 ---
 
-## � 节点详细说明
+## 节点详细说明
 
 本项目采用了 **“接口与实现分离”** 的工程化结构（`.hpp` 定义接口，`.cpp` 编写逻辑），并在 `bt_main.cpp` 中通过工厂模式统一注册。
 
