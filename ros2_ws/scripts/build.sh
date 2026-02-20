@@ -27,7 +27,36 @@ fi
 WORKSPACE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "${WORKSPACE_DIR}"
 
-colcon build --symlink-install
+MERGED_COMPILE_COMMANDS="${WORKSPACE_DIR}/compile_commands.json"
+
+merge_compile_commands() {
+  local output_file="$1"
+  local first=1
+
+  {
+    echo "["
+    while IFS= read -r file; do
+      # Strip outer [] and merge entries from each package compile_commands.
+      local entries
+      entries="$(sed -e '1d' -e '$d' "${file}")"
+      if [ -z "${entries}" ]; then
+        continue
+      fi
+      if [ "${first}" -eq 0 ]; then
+        echo ","
+      fi
+      printf "%s" "${entries}"
+      first=0
+    done < <(find "${WORKSPACE_DIR}/build" -mindepth 2 -maxdepth 2 -name compile_commands.json -type f | sort)
+    echo
+    echo "]"
+  } > "${output_file}"
+}
+
+colcon build --symlink-install --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+
+merge_compile_commands "${MERGED_COMPILE_COMMANDS}"
 
 echo "[build] Build finished. To use:"
 echo "  source ${WORKSPACE_DIR}/install/setup.bash"
+echo "[build] compile_commands merged to: ${MERGED_COMPILE_COMMANDS}"

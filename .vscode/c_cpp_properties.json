@@ -3,7 +3,7 @@
     "configurations": [
         {
             "name": "ROS2 (colcon)",
-            "compileCommands": "${workspaceFolder}/ros2_ws/build/compile_commands.json",
+            "compileCommands": "${workspaceFolder}/ros2_ws/compile_commands.json",
             "compilerPath": "/usr/bin/g++",
             "cStandard": "c17",
             "cppStandard": "c++17",

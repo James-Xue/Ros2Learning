@@ -1,6 +1,6 @@
 {
-    "cmake.sourceDirectory": "${workspaceFolder}/ros2_ws/src/ros2_learning_cpp",
-    "C_Cpp.default.compileCommands": "${workspaceFolder}/compile_commands.json",
+    "cmake.sourceDirectory": "${workspaceFolder}/ros2_ws",
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/ros2_ws/compile_commands.json",
     "C_Cpp.default.intelliSenseMode": "linux-gcc-x64",
     "C_Cpp.default.includePath": [
         "${workspaceFolder}/ros2_ws/src",
@@ -31,5 +31,12 @@
         "*.launch": "xml",
         "*.world": "xml",
         "*.sdf": "xml"
-    }
+    },
+    "python.autoComplete.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+    "python.analysis.extraPaths": [
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+    "cmake.ignoreCMakeListsMissing": true
 }
