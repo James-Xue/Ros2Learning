@@ -1,5 +1,6 @@
 #include "ros2_learning_multithreading/blocking_node.hpp"
 #include "rclcpp/rclcpp.hpp"
+#include <cstdlib> // 使得 std::abort() 可用
 
 /**
  * 该程序演示了如何根据参数选择不同的 ROS 2 执行器。
@@ -31,7 +32,8 @@ int main(int argc, char * argv[])
             if (last_heartbeat.nanoseconds() == 0) continue;
             
             if ((current_time - last_heartbeat).seconds() > 1.0) {
-                RCLCPP_FATAL(node->get_logger(), "🚨 [独立看门狗线程] 警告：发现执行器已被强行阻塞！心跳停滞超过 1 秒！急停！");
+                RCLCPP_FATAL(node->get_logger(), "🚨 [独立看门狗线程] 警告：发现执行器已被强行阻塞！心跳停滞超过 1 秒！立即执行物理切断 (std::abort)！");
+                std::abort(); // 立即强杀整个进程，不留任何情面
             }
         }
     });
