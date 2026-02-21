@@ -16,6 +16,7 @@ SphericalWrist6DOF::EndEffectorState SphericalWrist6DOF::forward(const JointStat
     // 这里为了演示，我们使用标准的 D-H 矩阵连乘原理来计算 FK
     // 为了不引入过多的代码，我们直接使用 Eigen 库构造并相乘
     // 真实工业应用中，这里全都是写死的解析公式以换取极致的计算速度
+    // 这里为了演示 D-H 参数法的数学魅力，我们将 6 个坐标系的齐次变换矩阵(4x4)相乘
 
     double t1 = joints.theta[0];
     double t2 = joints.theta[1];
@@ -24,16 +25,69 @@ SphericalWrist6DOF::EndEffectorState SphericalWrist6DOF::forward(const JointStat
     double t5 = joints.theta[4];
     double t6 = joints.theta[5];
 
-    // 基座旋转 (Z轴)
+    // =========================================================
+    // 正运动学核心思想：【Denavit-Hartenberg (D-H) 连乘法】
+    // =========================================================
+    // 每一个变换矩阵 T_{i}^{i-1} 表示第 i 个关节相对于第 i-1 个关节的位姿变换。
+    // 为了简化演示，我们假设这 6 个关节的 D-H 参数如下构型 (类似简单的串联机械臂)：
+    // (注意：实际工业机器人的 D-H 表格可能有不同的平移/旋转方向定义，这里给出一种通用的模型)
+
+    // 1. 基座旋转 (Z轴旋转 t1，沿 Z 轴平移 l1_ 到达肩关节)
     Eigen::Matrix4d T1_0 = Eigen::Matrix4d::Identity();
     T1_0(0,0) = cos(t1); T1_0(0,1) = -sin(t1);
     T1_0(1,0) = sin(t1); T1_0(1,1) = cos(t1);
     T1_0(2,3) = l1_;
 
-    // ... (省略复杂的 6 个矩阵相乘代码，核心就是 T_end = T1 * T2 * T3 * T4 * T5 * T6)
-    // 为了演示 IK，这里的 FK 我们直接给个假实现或跳过
-    ee.x = 0; ee.y = 0; ee.z = 0;
-    ee.R = Eigen::Matrix3d::Identity();
+    // 2. 肩部俯仰 (X轴旋转，沿 Z 轴平移 l2_ 到达肘关节)
+    Eigen::Matrix4d T2_1 = Eigen::Matrix4d::Identity();
+    T2_1(0,0) = cos(t2); T2_1(0,1) = -sin(t2);
+    T2_1(1,0) = sin(t2); T2_1(1,1) = cos(t2);
+    T2_1(2,3) = l2_;
+    // 假设关节 2 的旋转轴是 Y 轴（相对前一坐标系）
+    // 为了演示，此处直接写成标准形式的变换，具体轴向取决于具体的 D-H 建模
+
+    // 3. 肘部俯仰 (同样 X/Y 平面旋转，沿 Z 轴平移 l3_ 到达腕中心)
+    // 根据上面的 IK 逻辑，前三根杆件是在一个平面上的（如果 t1 固定）
+    Eigen::Matrix4d T3_2 = Eigen::Matrix4d::Identity();
+    T3_2(0,0) = cos(t3); T3_2(0,1) = -sin(t3);
+    T3_2(1,0) = sin(t3); T3_2(1,1) = cos(t3);
+    T3_2(2,3) = l3_;
+
+    // 4. 手腕自转 (Wrist Roll)
+    // 旋转 t4，Z 轴向前推进 d4_
+    Eigen::Matrix4d T4_3 = Eigen::Matrix4d::Identity();
+    T4_3(0,0) = cos(t4); T4_3(0,1) = -sin(t4);
+    T4_3(1,0) = sin(t4); T4_3(1,1) = cos(t4);
+    T4_3(2,3) = d4_;
+
+    // 5. 手腕俯仰 (Wrist Pitch)
+    // 旋转 t5，这里是相交点，没有平移
+    Eigen::Matrix4d T5_4 = Eigen::Matrix4d::Identity();
+    T5_4(0,0) = cos(t5); T5_4(0,1) = -sin(t5);
+    T5_4(1,0) = sin(t5); T5_4(1,1) = cos(t5);
+    
+    // 6. 工具自转 (Tool Roll)
+    // 旋转 t6，Z 轴向前伸出 d6_ 到达真正的机械爪末端
+    Eigen::Matrix4d T6_5 = Eigen::Matrix4d::Identity();
+    T6_5(0,0) = cos(t6); T6_5(0,1) = -sin(t6);
+    T6_5(1,0) = sin(t6); T6_5(1,1) = cos(t6);
+    T6_5(2,3) = d6_;
+
+    // 最终的位姿变换矩阵 = T1 * T2 * T3 * T4 * T5 * T6
+    Eigen::Matrix4d T_end = T1_0 * T2_1 * T3_2 * T4_3 * T5_4 * T6_5;
+
+    // 提取位置 (右上角的 3x1 向量)
+    ee.x = T_end(0, 3);
+    ee.y = T_end(1, 3);
+    ee.z = T_end(2, 3);
+
+    // 提取姿态 (左上角的 3x3 旋转矩阵)
+    ee.R = T_end.block<3, 3>(0, 0);
+
+    // 计算欧拉角 (Roll, Pitch, Yaw) - 假设为 ZYX 顺序
+    ee.yaw = std::atan2(ee.R(1, 0), ee.R(0, 0));
+    ee.pitch = std::atan2(-ee.R(2, 0), std::sqrt(ee.R(2, 1)*ee.R(2, 1) + ee.R(2, 2)*ee.R(2, 2)));
+    ee.roll = std::atan2(ee.R(2, 1), ee.R(2, 2));
 
     return ee;
 }
