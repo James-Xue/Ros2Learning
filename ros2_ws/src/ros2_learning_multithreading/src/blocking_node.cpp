@@ -23,9 +23,11 @@ namespace ros2_learning_multithreading
         // 为了让两个定时器能并行（在 MultiThreadedExecutor 下），
         // 我们必须把它们分到 **不同** 的互斥组，或者同一个可重入组。
         // 这里我们选择把它们分到两个独立的互斥组。
-        
         callback_group_1_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
         callback_group_2_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+
+        // 初始化最后心跳时间
+        last_heartbeat_nanoseconds_ = this->now().nanoseconds();
 
         // ========================== 定时器配置 ==========================
         
@@ -50,6 +52,9 @@ namespace ros2_learning_multithreading
 
     void BlockingNode::on_heartbeat()
     {
+        // 记录这一次心跳的时间
+        last_heartbeat_nanoseconds_ = this->now().nanoseconds();
+
         // 打印当前线程 ID，用于验证是否在不同线程运行
         std::stringstream ss;
         ss << std::this_thread::get_id();
@@ -70,5 +75,10 @@ namespace ros2_learning_multithreading
         std::this_thread::sleep_for(2000ms);
         
         RCLCPP_WARN(get_logger(), "[计算] 计算完成！");
+    }
+
+    rclcpp::Time BlockingNode::get_last_heartbeat_time() const
+    {
+        return rclcpp::Time(last_heartbeat_nanoseconds_.load(), this->get_clock()->get_clock_type());
     }
 }

@@ -19,6 +19,12 @@ namespace ros2_learning_multithreading
     public:
         BlockingNode();
 
+        /**
+         * @brief 获取最后一次心跳的时间
+         * @return rclcpp::Time 
+         */
+        rclcpp::Time get_last_heartbeat_time() const;
+
     private:
         /**
          * @brief 心跳回调函数 (模拟高频、实时性要求高的任务)
@@ -38,11 +44,15 @@ namespace ros2_learning_multithreading
 
         rclcpp::TimerBase::SharedPtr heartbeat_timer_;
         rclcpp::TimerBase::SharedPtr heavy_timer_;
+        
+        // 用于记录上一次心跳的时间
+        std::atomic<int64_t> last_heartbeat_nanoseconds_;
 
         // 回调组指针
         // 在 ROS 2 中，如果不指定 CallbackGroup，所有回调默认属于一个 "Default MutuallyExclusive Group"。
         // 也就是说，默认情况下，节点内的所有回调都是互斥的（排队执行）。
         rclcpp::CallbackGroup::SharedPtr callback_group_1_;
         rclcpp::CallbackGroup::SharedPtr callback_group_2_;
+        rclcpp::CallbackGroup::SharedPtr callback_group_3_;
     };
 }

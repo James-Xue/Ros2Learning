@@ -57,6 +57,7 @@ ros2_learning_multithreading/
 |---|---|---|---|---|
 | **心跳定时器** | 500ms | 快速打印心跳 | `callback_group_1_` | 底盘控制指令 |
 | **繁重计算定时器** | 3s | **阻塞 2 秒** | `callback_group_2_` | 全局路径规划 |
+| **看门狗定时器** | 200ms | 监控心跳是否超时 | `callback_group_3_` | **紧急安全停车** |
 
 ---
 
@@ -94,28 +95,26 @@ ros2 run ros2_learning_multithreading executor_demo
 
 ---
 
-#### 实验 B：多线程执行器（心跳不受影响）
+#### 实验 B：多线程执行器（心跳不受影响，看门狗安静）
 ```bash
 ros2 run ros2_learning_multithreading executor_demo --ros-args -p executor_type:=multi
 ```
 
-**预期现象**：
-```
-[INFO] Executor Type: multi
-[INFO] Using MultiThreadedExecutor (Parallel!)
-[INFO] [心跳] 咚! 线程 ID: 140123456001
-[WARN] [计算] 开始复杂计算... 线程 ID: 140123456002 (预计阻塞 2秒)
-[INFO] [心跳] 咚! 线程 ID: 140123456001  # ✅ 心跳继续跳动！
-[INFO] [心跳] 咚! 线程 ID: 140123456001  # ✅ 心跳继续跳动！
-[WARN] [计算] 计算完成！
-```
-
-**分析**：
+**预期现象**：心跳持续输出，繁重计算在后台执行，看门狗默默守护不报警。
 - ✅ 心跳和计算运行在**不同线程**
 - ✅ 心跳不受计算阻塞的影响
 - ✅ 适合复杂、实时性要求高的系统
 
 ---
+
+#### 实验 C：多线程但限制资源（模拟边缘计算降级）
+```bash
+ros2 run ros2_learning_multithreading executor_demo --ros-args -p executor_type:=multi -p thread_count:=1
+```
+
+**预期现象**：退化为单线程效果。
+- ❌ 因为我们强制将线程池限制为 `1` 个，所以即使它们在不同的互斥组，也没有多余的线程可用。
+- 🚨 **看门狗警报触发**：证明资源受限是产生“假死”的重要根源！
 
 ## 📊 代码核心讲解
 
@@ -124,9 +123,10 @@ ros2 run ros2_learning_multithreading executor_demo --ros-args -p executor_type:
 ```cpp
 // blocking_node.cpp
 
-// 创建两个独立的互斥组
+// 创建独立的互斥组
 callback_group_1_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 callback_group_2_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
+callback_group_3_ = this->create_callback_group(rclcpp::CallbackGroupType::MutuallyExclusive);
 
 // 心跳定时器 → 分配到组 1
 heartbeat_timer_ = this->create_wall_timer(
@@ -139,10 +139,16 @@ heavy_timer_ = this->create_wall_timer(
     3000ms,
     std::bind(&BlockingNode::on_heavy_calculation, this),
     callback_group_2_);  // ← 指定回调组
+
+// 看门狗定时器 → 分配到组 3
+watchdog_timer_ = this->create_wall_timer(
+    200ms,
+    std::bind(&BlockingNode::on_watchdog, this),
+    callback_group_3_);
 ```
 
 > [!TIP]
-> **关键点**：由于两个定时器在**不同的互斥组**，`MultiThreadedExecutor` 可以并行执行它们。
+> **关键点**：由于定时器在**不同的互斥组**，`MultiThreadedExecutor` 如果配置了充足的 `thread_count` 就可以并行执行它们，并让监控组优先得到保障。
 
 ---
 
