@@ -55,6 +55,22 @@ public:
 private:
   void timer_callback()
   {
+    // 模拟偶尔的心跳丢失 (用于触发 Deadline Missed 事件)
+    // 注意：不使用 sleep_for()，因为在单线程 Executor 中会阻塞整个事件循环
+    if (++count_ % 20 == 0) { // 每 10 秒左右
+      RCLCPP_WARN(this->get_logger(), "[Rover] 模拟心跳丢失（跳过本次及后续数次发布）！");
+      skip_heartbeat_rounds_ = 3; // 跳过 3 次发布 (1.5s > 600ms Deadline)
+    }
+
+    if (skip_heartbeat_rounds_ > 0) {
+      --skip_heartbeat_rounds_;
+      // 仍然需要发布其他不被“卡顿”影响的数据吗？
+      // 在这个模拟中，我们假设是整个系统卡顿，还是仅仅心跳逻辑挂了？
+      // Claude 的建议是 skip，这其实模拟的是“心跳逻辑”层面的故障，而非系统卡死。
+      // 这更符合“不阻塞”的最佳实践。
+      return; 
+    }
+
     // 发布图像 (Best Effort)
     auto img_msg = sensor_msgs::msg::Image();
     img_msg.header.frame_id = "camera_link";
@@ -73,17 +89,6 @@ private:
     std_msgs::msg::String hb_msg;
     hb_msg.data = "ALIVE";
     heartbeat_pub_->publish(hb_msg);
-    
-    // 模拟偶尔的心跳丢失 (用于触发 Deadline Missed 事件)
-    // 注意：不使用 sleep_for()，因为在单线程 Executor 中会阻塞整个事件循环
-    if (++count_ % 20 == 0) { // 每 10 秒左右
-      RCLCPP_WARN(this->get_logger(), "[Rover] 模拟心跳丢失（跳过本次及后续数次发布）！");
-      skip_heartbeat_rounds_ = 3; // 跳过 3 次发布 (1.5s > 600ms Deadline)
-    }
-    if (skip_heartbeat_rounds_ > 0) {
-      --skip_heartbeat_rounds_;
-      return; // 跳过本次心跳发布，不阻塞其他功能
-    }
   }
 
   void publish_static_map()
@@ -161,8 +166,9 @@ public:
     // 尝试用 Reliable 订阅 Best Effort 的发布者 -> 应该收不到
     auto incompatible_qos = rclcpp::QoS(rclcpp::KeepLast(10)).reliable();
     
-    // 注册不兼容 QoS 事件回调，当 DDS 检测到 Pub/Sub 的 QoS 不兼容时，会触发此回调
+    // 注册不兼容 QoS 事件回调
     rclcpp::SubscriptionOptions incompatible_opts;
+    // 使用新版 API 回调名称 (Jazzy/Rolling)
     incompatible_opts.event_callbacks.incompatible_qos_callback =
       [this](rclcpp::QOSRequestedIncompatibleQoSInfo & event) {
         RCLCPP_WARN(this->get_logger(),
