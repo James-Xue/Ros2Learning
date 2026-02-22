@@ -13,11 +13,17 @@ find_package(sensor_msgs REQUIRED)
 include_directories(include)
 
 # Executable 1: QoS Producer (Simulates Rover)
-add_executable(qos_producer src/qos_producer.cpp)
+add_executable(qos_producer
+  src/qos_producer.cpp
+  src/rover_node.cpp
+)
 ament_target_dependencies(qos_producer rclcpp std_msgs sensor_msgs)
 
 # Executable 2: QoS Consumer (Simulates Ground Control)
-add_executable(qos_consumer src/qos_consumer.cpp)
+add_executable(qos_consumer
+  src/qos_consumer.cpp
+  src/mission_control_node.cpp
+)
 ament_target_dependencies(qos_consumer rclcpp std_msgs sensor_msgs)
 
 install(TARGETS
