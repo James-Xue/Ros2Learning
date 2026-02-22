@@ -40,8 +40,8 @@ ROS 2 底层使用 DDS (Data Distribution Service)，默认基于 **UDP** 协议
 2. **地图数据**: 即使 `MissionControl` 启动较慢，或者中途重启，它一启动就能收到 `>>> [Control] 同步到地图数据 <<<`，因为 Publisher 设置了 `Transient Local`。
 3. **心跳监控**: 
    - 正常情况下心跳平稳。
-   - 代码中模拟了 **每 10 秒一次的卡顿**（Sleep 1s）。
-   - 此时你会看到控制台报错：`!!! [ALARM] 心跳丢失！截止期未收到数据 !!!`。这展示了 Deadline QoS 的作用。
+   - 代码中模拟了 **每 10 秒一次的丢包**（跳过 3 轮心跳发布）。
+   - 此时你会看到控制台报错：`!!! [ALARM] 心跳丢失！截止期未收到数据 !!!`。这展示了 Deadline QoS 的作用，且不会像 `sleep_for` 那样阻塞整个系统。
 4. **不兼容测试**: 代码中尝试用 `Reliable` 订阅 `Best Effort` 的视频流，结果是**收不到任何数据**。这是因为 QoS 兼容性规则（Request > Offer）。
 
 ## 📚 关键代码片段 (C++)
