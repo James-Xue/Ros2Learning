@@ -7,7 +7,8 @@ using namespace std::chrono_literals;
 namespace ros2_learning_qos
 {
 
-MissionControlNode::MissionControlNode() : Node("mission_control")
+MissionControlNode::MissionControlNode(const rclcpp::NodeOptions & options)
+  : Node("mission_control", options)
 {
   // 1. 订阅视频 (Best Effort) -> 兼容
   auto camera_qos = rclcpp::SensorDataQoS();
@@ -77,3 +78,6 @@ MissionControlNode::MissionControlNode() : Node("mission_control")
 }
 
 } // namespace ros2_learning_qos
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(ros2_learning_qos::MissionControlNode)

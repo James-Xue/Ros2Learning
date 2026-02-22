@@ -8,7 +8,8 @@ using namespace std::chrono_literals;
 namespace ros2_learning_qos
 {
 
-RoverNode::RoverNode() : Node("mars_rover")
+RoverNode::RoverNode(const rclcpp::NodeOptions & options)
+  : Node("mars_rover", options)
 {
   // 1. [摄像头数据] -> Best Effort (丢包不重发，保证实时性)
   // 模拟高频视频流，允许网络抖动时丢帧
@@ -85,3 +86,6 @@ void RoverNode::publish_static_map()
 }
 
 } // namespace ros2_learning_qos
+
+#include "rclcpp_components/register_node_macro.hpp"
+RCLCPP_COMPONENTS_REGISTER_NODE(ros2_learning_qos::RoverNode)

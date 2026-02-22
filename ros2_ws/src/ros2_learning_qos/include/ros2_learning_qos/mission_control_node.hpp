@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include "rclcpp/node_options.hpp"
+
 #include "rclcpp/rclcpp.hpp"
 #include "sensor_msgs/msg/image.hpp"
 #include "std_msgs/msg/string.hpp"
@@ -17,7 +19,7 @@ namespace ros2_learning_qos
 class MissionControlNode : public rclcpp::Node
 {
 public:
-  MissionControlNode();
+  explicit MissionControlNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions());
 
 private:
   rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr camera_sub_;
