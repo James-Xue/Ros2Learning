@@ -15,23 +15,36 @@ ROS 2 底层使用 DDS (Data Distribution Service)，默认基于 **UDP** 协议
 | **静态地图数据** | 地图很少更新。**后加入**的控制台（Late Joiner）必须能收到最近的一份地图。 | **Reliable** + **Transient Local** | 发布者会保留最后 N 条数据，新订阅者连接时自动补发（类似 ROS 1 Latched）。 |
 | **系统心跳** | 安全监控。如果 N 毫秒内没收到心跳，视为系统失联，触发报警。 | **Deadline** (600ms) | 如果发布/接收间隔超过设定值，触发事件回调。 |
 
-## 🛠️ 代码结构
+## 🛠️ 代码结构 (组件化架构)
 
-- **`RoverNode` (qos_producer)**: 模拟火星车，发布上述 4 种数据。
-- **`MissionControlNode` (qos_consumer)**: 模拟控制台，订阅数据并监控 QoS 事件（如 Deadline Missed）。
+本项目采用了 ROS 2 推荐的 **Composition (组件化)** 架构，实现了节点的解耦和零拷贝通信：
+
+- **`rover_node.hpp / .cpp`**: 模拟火星车，发布上述 4 种数据。注册为可动态加载的插件。
+- **`mission_control_node.hpp / .cpp`**: 模拟控制台，订阅数据并监控 QoS 事件（如 Deadline Missed）。注册为插件。
+- **`qos_demo.launch.py`**: 使用 `ComposableNodeContainer` 将上述两个节点加载到**同一个进程**中运行。
+
+通过组件化，我们不仅展示了各种 QoS 策略，还展示了 ROS 2 如何在同一进程内实现高性能的零拷贝通信。
 
 ## 🚀 编译与运行
 
-1. **编译** (限制并发以防卡顿):
+1. **编译**:
    ```bash
    cd ~/Ros2Learning/ros2_ws
    colcon build --packages-select ros2_learning_qos --parallel-workers 2
    source install/setup.bash
    ```
 
-2. **运行演示**:
+2. **运行演示 (推荐：同进程组件模式)**:
    ```bash
    ros2 launch ros2_learning_qos qos_demo.launch.py
+   ```
+   > 容器 `component_container` 会将火星车和控制台两个插件加载到同一个进程中运行。
+
+3. **运行演示 (备选：独立进程模式)**:
+   如果你想跨进程测试真实的 DDS 网络行为，也可以起两个终端分别运行（向后兼容）：
+   ```bash
+   ros2 run ros2_learning_qos qos_producer
+   ros2 run ros2_learning_qos qos_consumer
    ```
 
 ## 🧪 实验现象预期
