@@ -100,7 +100,8 @@ int main(int argc, char ** argv)
   rclcpp::Rate rate(10);
 
   // 循环运行，直到行为树返回 SUCCESS 或 FAILURE 终止状态
-  while (rclcpp::ok() && status != BT::NodeStatus::SUCCESS && status != BT::NodeStatus::FAILURE) {
+  while (rclcpp::ok() && status != BT::NodeStatus::SUCCESS 
+  && status != BT::NodeStatus::FAILURE) {
     // Tick 一次整棵树
     status = tree.tickOnce();
 
