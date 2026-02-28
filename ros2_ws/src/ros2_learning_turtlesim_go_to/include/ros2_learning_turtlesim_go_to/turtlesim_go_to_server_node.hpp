@@ -8,7 +8,7 @@
 #include "rclcpp/rclcpp.hpp"
 
 #include "geometry_msgs/msg/twist.hpp"
-#include "ros2_learning_turtlesim_go_to/srv/go_to.hpp"
+#include "ros2_learning_custom_interfaces/srv/go_to.hpp"
 #include "turtlesim/msg/pose.hpp"
 
 namespace ros2_learning_turtlesim_go_to
@@ -20,7 +20,7 @@ class TurtlesimGoToServerNode : public rclcpp::Node
     TurtlesimGoToServerNode();
 
   private:
-    using GoTo = ros2_learning_turtlesim_go_to::srv::GoTo;
+    using GoTo = ros2_learning_custom_interfaces::srv::GoTo;
     using Pose = turtlesim::msg::Pose;
     using Twist = geometry_msgs::msg::Twist;
 

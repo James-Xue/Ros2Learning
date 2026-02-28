@@ -12,11 +12,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(turtlesim REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/GoTo.srv"
-)
+find_package(ros2_learning_custom_interfaces REQUIRED)
 
 add_executable(turtlesim_go_to_server
   src/turtlesim_go_to_server_node.cpp
@@ -32,12 +28,8 @@ ament_target_dependencies(turtlesim_go_to_server
   rclcpp
   geometry_msgs
   turtlesim
+  ros2_learning_custom_interfaces
 )
-
-# Link generated service typesupport
-rosidl_get_typesupport_target(cpp_typesupport_target
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
-target_link_libraries(turtlesim_go_to_server "${cpp_typesupport_target}")
 
 add_executable(turtlesim_go_to_client
   src/turtlesim_go_to_client_node.cpp
@@ -46,10 +38,8 @@ add_executable(turtlesim_go_to_client
 
 ament_target_dependencies(turtlesim_go_to_client
   rclcpp
+  ros2_learning_custom_interfaces
 )
-
-# Client also needs the generated service symbols
-target_link_libraries(turtlesim_go_to_client "${cpp_typesupport_target}")
 
 target_include_directories(turtlesim_go_to_client PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -66,5 +56,5 @@ install(DIRECTORY include/
   DESTINATION include
 )
 
-ament_export_dependencies(rosidl_default_runtime)
+ament_export_dependencies(ros2_learning_custom_interfaces)
 ament_package()

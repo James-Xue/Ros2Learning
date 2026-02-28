@@ -6,10 +6,13 @@
 
 #include "rclcpp/rclcpp.hpp"
 
-#include "ros2_learning_turtlesim_go_to/srv/go_to.hpp"
+#include "ros2_learning_custom_interfaces/srv/go_to.hpp"
 
 namespace ros2_learning_turtlesim_go_to
 {
+
+// 引入 custom_interfaces 的 srv 子命名空间，使下方代码中 srv::GoTo 可以正确解析
+namespace srv = ros2_learning_custom_interfaces::srv;
 
 class TurtlesimGoToClientNode : public rclcpp::Node
 {

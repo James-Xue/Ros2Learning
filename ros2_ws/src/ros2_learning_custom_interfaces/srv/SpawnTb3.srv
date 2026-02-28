@@ -1,0 +1,22 @@
+# 在 Gazebo 中生成 TurtleBot3 实体的服务。
+# 由 ros2_learning_tb3_spawner 包提供。
+
+# --- 请求 ---
+
+# Gazebo 中实体名称。若为空字符串则自动生成唯一名称。
+string name
+
+# TurtleBot3 型号。若为空则使用环境变量 TURTLEBOT3_MODEL 或节点参数 default_model。
+# 常用值: burger, waffle, waffle_pi
+string model
+
+# 在 Gazebo 世界坐标系中的位姿
+float64 x
+float64 y
+float64 z
+float64 yaw
+
+---
+# --- 响应 ---
+bool success
+string message

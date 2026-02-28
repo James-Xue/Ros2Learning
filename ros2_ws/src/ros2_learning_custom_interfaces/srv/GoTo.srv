@@ -1,0 +1,15 @@
+# 驱动 turtlesim 中指定海龟平滑运动到目标位姿的服务。
+# 由 ros2_learning_turtlesim_go_to 包提供。
+#
+# 注意：实现为速度控制（P控制器），而非瞬间传送（teleport）。
+
+# --- 请求 ---
+string turtle_name  # turtlesim 中的海龟名称，如 "turtle1"
+float32 x           # 目标 x 坐标
+float32 y           # 目标 y 坐标
+float32 theta       # 目标朝向（弧度）
+
+---
+# --- 响应 ---
+bool success
+string message

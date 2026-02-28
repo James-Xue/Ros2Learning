@@ -25,7 +25,7 @@
 // 带协方差的位姿（常用于初始位姿 /initialpose）
 #include "geometry_msgs/msg/pose_with_covariance_stamped.hpp"
 // 自定义的消息类型，用于汇报本节点的任务状态
-#include "ros2_learning_task_runner/msg/task_status.hpp"
+#include "ros2_learning_custom_interfaces/msg/task_status.hpp"
 // 标准浮点数消息，用于发布距离
 #include "std_msgs/msg/float32.hpp"
 
@@ -155,7 +155,7 @@ class TaskRunner : public rclcpp::Node
     // Publishers: 负责将信息广播出去，供其他节点（如 UI、调试工具）查看
     rclcpp::Publisher<std_msgs::msg::Float32>::SharedPtr
         m_DistancePub; // 发布剩余距离
-    rclcpp::Publisher<ros2_learning_task_runner::msg::TaskStatus>::SharedPtr
+    rclcpp::Publisher<ros2_learning_custom_interfaces::msg::TaskStatus>::SharedPtr
         m_StatePub; // 发布核心任务状态
     rclcpp::Publisher<PoseWithCovarianceStamped>::SharedPtr
         m_InitialPosePub; // 发布 AMCL 初始化位姿

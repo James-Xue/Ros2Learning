@@ -9,15 +9,10 @@
   <license>Apache-2.0</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>
-  <buildtool_depend>rosidl_default_generators</buildtool_depend>
-
-  <member_of_group>rosidl_interface_packages</member_of_group>
-
   <depend>rclcpp</depend>
   <depend>geometry_msgs</depend>
   <depend>turtlesim</depend>
-
-  <exec_depend>rosidl_default_runtime</exec_depend>
+  <depend>ros2_learning_custom_interfaces</depend>
 
   <export>
     <build_type>ament_cmake</build_type>

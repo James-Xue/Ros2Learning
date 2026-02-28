@@ -104,7 +104,7 @@ TaskRunner::TaskRunner()
     m_DistancePub = this->create_publisher<std_msgs::msg::Float32>(
         "distance_remaining", 10);
     m_StatePub =
-        this->create_publisher<ros2_learning_task_runner::msg::TaskStatus>(
+        this->create_publisher<ros2_learning_custom_interfaces::msg::TaskStatus>(
             "task_status", 10);
     m_InitialPosePub =
         this->create_publisher<PoseWithCovarianceStamped>("/initialpose", 10);
@@ -251,7 +251,7 @@ void TaskRunner::set_state(TaskState state, const std::string &phase,
     }
 
     // 填充 ROS 消息并发布给监听者（如 Web UI 或 Dashboard 节点）
-    ros2_learning_task_runner::msg::TaskStatus msg;
+    ros2_learning_custom_interfaces::msg::TaskStatus msg;
     msg.state = state_to_string(state);
     msg.phase = m_CurrentPhase;
     msg.pickup_index = m_CurrentPickupIndex;

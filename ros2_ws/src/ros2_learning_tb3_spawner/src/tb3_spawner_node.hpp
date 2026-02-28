@@ -6,7 +6,7 @@
 
 #include "ros_gz_interfaces/srv/spawn_entity.hpp"
 
-#include "ros2_learning_tb3_spawner/srv/spawn_tb3.hpp"
+#include "ros2_learning_custom_interfaces/srv/spawn_tb3.hpp"
 
 namespace ros2_learning_tb3_spawner
 {
@@ -17,7 +17,7 @@ class Tb3SpawnerNode : public rclcpp::Node
     Tb3SpawnerNode();
 
   private:
-    using SpawnTb3 = ros2_learning_tb3_spawner::srv::SpawnTb3;
+    using SpawnTb3 = ros2_learning_custom_interfaces::srv::SpawnTb3;
     using SpawnEntity = ros_gz_interfaces::srv::SpawnEntity;
 
     void handle_spawn(const std::shared_ptr<SpawnTb3::Request> request,

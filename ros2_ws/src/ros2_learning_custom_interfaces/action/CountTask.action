@@ -1,0 +1,26 @@
+# CountTask.action
+#
+# 学习用 Action 接口：以固定周期从 0 计数到 target。
+# 演示 ROS 2 Action 的完整三段结构：Goal / Result / Feedback。
+#
+# 用法示意：
+#   - Action Server 接收 Goal，每 period_sec 秒递增一次计数
+#   - 每次递增后通过 Feedback 汇报当前进度
+#   - 计数完成（或被客户端取消）后，通过 Result 返回汇总信息
+#
+# 对应的 Action Server 实现包：ros2_learning_actions（阶段 1.4）
+
+# --- Goal（目标） ---
+int32   target      # 计数上限，必须 > 0
+float32 period_sec  # 每次递增之间的等待时间（秒），必须 > 0
+
+---
+# --- Result（结果） ---
+int32   final_count  # 实际达到的最终计数值
+float32 elapsed_sec  # 任务总耗时（秒）
+bool    succeeded    # true = 正常完成到 target；false = 被取消或出错
+
+---
+# --- Feedback（过程反馈） ---
+int32   current  # 当前计数值
+float32 percent  # 完成百分比（0.0 ~ 100.0）

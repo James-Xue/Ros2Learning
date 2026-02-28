@@ -14,11 +14,7 @@ find_package(ros_gz_interfaces REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2 REQUIRED)
 find_package(ament_index_cpp REQUIRED)
-find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "srv/SpawnTb3.srv"
-)
+find_package(ros2_learning_custom_interfaces REQUIRED)
 
 add_executable(tb3_spawner
   src/tb3_spawner_node.cpp
@@ -36,12 +32,8 @@ ament_target_dependencies(tb3_spawner
   geometry_msgs
   tf2
   ament_index_cpp
+  ros2_learning_custom_interfaces
 )
-
-# 使用新的 rosidl typesupport API（替代已弃用的 rosidl_target_interfaces）
-rosidl_get_typesupport_target(cpp_typesupport_target
-  ${PROJECT_NAME} "rosidl_typesupport_cpp")
-target_link_libraries(tb3_spawner "${cpp_typesupport_target}")
 
 install(TARGETS
   tb3_spawner
@@ -56,6 +48,6 @@ install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
 )
 
-ament_export_dependencies(rosidl_default_runtime)
+ament_export_dependencies(ros2_learning_custom_interfaces)
 
 ament_package()
