@@ -9,14 +9,21 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(geometry_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 include_directories(include)
 
 # 1. Math Library (纯数学库，无 ROS 依赖)
 add_library(kinematics_lib
   src/planar_2dof.cpp
+  src/spherical_wrist_6dof.cpp
 )
-target_include_directories(kinematics_lib PRIVATE include)
+target_include_directories(kinematics_lib
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(kinematics_lib Eigen3::Eigen)
 
 # 2. Demo Node (ROS 节点)
 add_executable(ik_demo_node
@@ -41,7 +48,20 @@ if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
   set(ament_cmake_copyright_FOUND TRUE)
   set(ament_cmake_cpplint_FOUND TRUE)
+  set(ament_cmake_uncrustify_FOUND TRUE)  # 现有代码不符合 uncrustify 风格，暂时跳过
   ament_lint_auto_find_test_dependencies()
+
+  find_package(ament_cmake_gtest REQUIRED)
+
+  ament_add_gtest(test_planar_2dof
+    test/test_planar_2dof.cpp
+  )
+  target_link_libraries(test_planar_2dof kinematics_lib)
+
+  ament_add_gtest(test_spherical_wrist_6dof
+    test/test_spherical_wrist_6dof.cpp
+  )
+  target_link_libraries(test_spherical_wrist_6dof kinematics_lib Eigen3::Eigen)
 endif()
 
 ament_package()
