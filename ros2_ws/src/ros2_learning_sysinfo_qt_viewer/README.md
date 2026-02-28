@@ -1,10 +1,20 @@
-# ROS2 SysInfo Qt Viewer
+# ros2_learning_sysinfo_qt_viewer
+
+> 基于 Qt 的 ROS 2 系统信息实时监控 GUI，通过 QTimer 将 ROS 2 `spin_some()` 嵌入 Qt 事件循环，无需额外线程即可安全更新界面。
 
 一个基于 Qt 的 ROS 2 系统信息实时监控界面，展示如何优雅地集成 Qt GUI 框架与 ROS 2 节点。
 
 ![ROS 2](https://img.shields.io/badge/ROS%202-Jazzy-blue)
 ![Qt](https://img.shields.io/badge/Qt-5%2F6-green)
 ![C++17](https://img.shields.io/badge/C++-17-orange)
+
+---
+
+## 功能描述
+
+`sysinfo_qt_viewer` 节点订阅系统信息话题（默认 `/ros2_learning/sysinfo`，消息类型 `std_msgs/msg/String`，内容为 JSON），将收到的 JSON 数据解析后以表格形式实时显示在 Qt 主窗口中。
+
+核心设计是将 `rclcpp::executors::SingleThreadedExecutor::spin_some()` 通过 `QTimer`（每 10ms 触发一次）嵌入 Qt 主事件循环，避免多线程和跨线程信号槽带来的复杂度，所有回调均在 Qt 主线程中执行，可以直接操作 UI 控件。
 
 ---
 
@@ -249,6 +259,58 @@ export CMAKE_PREFIX_PATH=/path/to/qt5:$CMAKE_PREFIX_PATH
 **原因**: ROS 回调处理时间过长
 
 **解决**: 检查 `json_formatter.cpp` 中的处理逻辑，确保高效
+
+---
+
+## 输入/输出
+
+| 方向 | 话题 | 类型 | 说明 |
+|------|------|------|------|
+| 订阅（输入） | `/ros2_learning/sysinfo`（可通过参数 `topic` 修改） | `std_msgs/msg/String` | JSON 格式的系统信息（由 `ros2_learning_sysinfo_publisher` 发布） |
+
+本节点不发布任何话题，不提供任何服务，不使用任何动作接口。
+
+---
+
+## 运行命令
+
+```bash
+# 进入工作空间并 source 环境
+cd /root/Ros2Learning
+source ./ros2_ws/scripts/source.sh jazzy
+
+# 方式一：一键启动（推荐，同时启动发布器和查看器）
+ros2 launch ros2_learning_sysinfo_qt_viewer sysinfo_monitor.launch.py
+
+# 方式二：分步启动
+# 终端 1 - 启动系统信息发布器
+ros2 run ros2_learning_sysinfo_publisher sysinfo_publisher
+
+# 终端 2 - 启动 Qt 查看器
+ros2 run ros2_learning_sysinfo_qt_viewer sysinfo_qt_viewer
+
+# 方式三：自定义话题
+ros2 run ros2_learning_sysinfo_qt_viewer sysinfo_qt_viewer \
+  --ros-args -p topic:=/custom/sysinfo
+```
+
+---
+
+## 验收测试
+
+暂无，待补充。
+
+（可手动验收：launch 启动后 Qt 窗口应在数秒内显示 CPU / 内存 / 网络数据；`ros2 topic echo /ros2_learning/sysinfo` 有持续输出。）
+
+---
+
+## 已知限制
+
+- 依赖 `ros2_learning_sysinfo_publisher` 提供数据，单独运行只会显示"Waiting for messages..."。
+- 使用 Qt 5（`qtbase5-dev`），未验证 Qt 6 兼容性；Ubuntu 24.04 系统默认 Qt 版本请根据实际安装情况调整。
+- `QTimer` 轮询间隔固定为 10ms，若 JSON 解析耗时超过此值会阻塞 Qt 事件循环导致 UI 卡顿。
+- 窗口为单一全局 `QTextEdit`，每次消息到达均全量替换文本，内容较多时有轻微闪烁。
+- 不支持同时监控多个话题。
 
 ---
 

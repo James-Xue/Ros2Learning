@@ -1,4 +1,8 @@
-# 📡 ROS 2 QoS (Quality of Service) 深度解析：火星探测车通信实战
+# ros2_learning_qos
+
+> 通过火星探测车仿真场景，演示 ROS 2 四种核心 QoS 策略（Best Effort、Reliable、Transient Local、Deadline）及 Composition 组件化架构的同进程零拷贝通信。
+
+# ROS 2 QoS (Quality of Service) 深度解析：火星探测车通信实战
 
 本项目通过模拟 **火星探测车 (Mars Rover)** 与 **地球控制中心 (Mission Control)** 之间的通信，演示 ROS 2 基于 DDS 的 QoS 机制。
 
@@ -71,3 +75,56 @@ auto heartbeat_qos = rclcpp::QoS(rclcpp::KeepLast(10)).deadline(600ms);
 ```
 
 通过这个 Demo，你可以直观地理解 ROS 2 如何利用 DDS 的强大特性来应对复杂的网络环境。
+
+## 输入/输出
+
+### RoverNode（发布者）
+
+| 话题 | 消息类型 | QoS 策略 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `camera/image_raw` | `sensor_msgs/msg/Image` | Best Effort（SensorDataQoS）| 模拟高频视频流，500 ms 一帧 |
+| `rover/cmd_ack` | `std_msgs/msg/String` | Reliable，KeepLast(10) | 指令执行确认，必须到达 |
+| `rover/map` | `std_msgs/msg/String` | Reliable + Transient Local，KeepLast(1) | 静态地图，节点启动时发布一次，后加入者自动同步 |
+| `rover/heartbeat` | `std_msgs/msg/String` | KeepLast(10)，Deadline 600 ms | 心跳信号，超时触发控制台报警 |
+
+### MissionControlNode（订阅者）
+
+| 话题 | 消息类型 | QoS 策略 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `camera/image_raw` | `sensor_msgs/msg/Image` | Best Effort（SensorDataQoS）| 兼容接收视频帧 |
+| `rover/cmd_ack` | `std_msgs/msg/String` | Reliable，KeepLast(10) | 打印收到的指令确认 |
+| `rover/map` | `std_msgs/msg/String` | Reliable + Transient Local，KeepLast(1) | 迟加入时自动补发地图 |
+| `rover/heartbeat` | `std_msgs/msg/String` | KeepLast(10)，Deadline 600 ms | 超时触发 `deadline_callback` 报警 |
+| `camera/image_raw`（不兼容测试）| `sensor_msgs/msg/Image` | Reliable（故意与发布者不兼容）| 触发 `incompatible_qos_callback`，验证收不到数据 |
+
+本包不对外提供任何服务或动作接口。
+
+## 验收测试
+
+本包暂无自动化测试目标。验收方式为手动运行并观察控制台输出：
+
+```bash
+# 编译
+cd /root/Ros2Learning/ros2_ws
+colcon build --packages-select ros2_learning_qos
+
+# 启动演示
+source install/setup.bash
+ros2 launch ros2_learning_qos qos_demo.launch.py
+```
+
+预期观察到以下输出（缺少任何一项均为异常）：
+
+1. `[Rover] 地图数据已发布 (Transient Local)` —— 启动即出现
+2. `>>> [Control] 同步到地图数据 <<<` —— MissionControl 加载后立即出现
+3. `[Control] 收到指令确认: CMD_EXECUTED_OK` —— 每 500 ms 一次
+4. `!!! [ALARM] 心跳丢失！` —— 约每 10 秒触发一次
+5. `[Control] QoS 不兼容!` —— 启动后出现，确认不兼容检测生效
+
+暂无 `colcon test` 目标，待补充。
+
+## 已知限制
+
+- `rover_node.cpp` 的 `skip_heartbeat_rounds_` 逻辑在跳过心跳期间也会跳过视频帧和指令确认的发布，与代码注释"仅心跳逻辑挂了"的描述不一致，实为整条回调被跳过。
+- 不兼容 QoS 测试中，`incompatible_sub_` 订阅 `camera/image_raw` 时使用 Reliable，与 Best Effort 发布者不兼容是预期行为，但 `incompatible_qos_callback` 依赖 rmw 实现触发，在部分 rmw 后端（如 `rmw_cyclonedds`）可能不触发警告。
+- 演示代码硬编码了 Deadline 600 ms 和跳过计数器（每 20 次 tick 触发一次），无法通过 ROS 参数动态调整，不适合作为真实系统模板。

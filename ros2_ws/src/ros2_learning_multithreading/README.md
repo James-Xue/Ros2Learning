@@ -1,6 +1,10 @@
-# 🧵 ROS 2 Multithreading & Executor Demo
+# ros2_learning_multithreading
 
-## 📋 概述
+> 对比演示 ROS 2 单线程/多线程执行器（Executor）与互斥/可重入回调组（CallbackGroup）的并发行为，配合独立看门狗线程验证执行器阻塞时的安全响应。
+
+# ROS 2 Multithreading & Executor Demo
+
+## 概述
 
 这个包演示了 ROS 2 **执行器（Executor）** 和 **回调组（CallbackGroup）** 的核心概念，通过对比单线程和多线程执行器处理阻塞任务的不同表现，帮助理解 ROS 2 的并发机制。
 
@@ -252,7 +256,60 @@ imu_sub_ = create_subscription(..., parallel_group);
 
 ---
 
-## 📚 相关学习资源
+## 输入/输出
+
+`BlockingNode` 本身不发布任何话题、不提供任何服务，也不订阅任何外部数据源。所有逻辑通过内部定时器回调完成，用于单纯演示执行器调度行为。
+
+| 接口类型 | 名称 | 说明 |
+| :--- | :--- | :--- |
+| 无对外话题 | — | 节点仅通过 `RCLCPP_INFO`/`RCLCPP_WARN`/`RCLCPP_FATAL` 日志输出展示调度结果 |
+
+可用 ROS 参数控制运行模式：
+
+| 参数名 | 类型 | 默认值 | 说明 |
+| :--- | :--- | :--- | :--- |
+| `executor_type` | `string` | `"single"` | `"single"` 启用单线程执行器，`"multi"` 启用多线程执行器 |
+| `thread_count` | `int` | `0` | 多线程执行器线程数，`0` 表示不限制（取决于 CPU 核心数） |
+
+## 验收测试
+
+本包暂无 `colcon test` 目标，待补充。
+
+手动验收步骤：
+
+```bash
+cd /root/Ros2Learning/ros2_ws
+colcon build --packages-select ros2_learning_multithreading
+source install/setup.bash
+
+# 实验 A：单线程（预期：心跳被计算阻塞约 2 秒，看门狗触发 std::abort）
+ros2 run ros2_learning_multithreading executor_demo
+
+# 实验 B：多线程（预期：心跳不中断，看门狗静默）
+ros2 run ros2_learning_multithreading executor_demo --ros-args -p executor_type:=multi
+
+# 实验 C：多线程但线程数限制为 1（预期：退化为单线程效果，看门狗触发 std::abort）
+ros2 run ros2_learning_multithreading executor_demo --ros-args -p executor_type:=multi -p thread_count:=1
+```
+
+也可通过 launch 文件启动：
+
+```bash
+# 多线程模式
+ros2 launch ros2_learning_multithreading multi_threaded.launch.py
+
+# 单线程模式
+ros2 launch ros2_learning_multithreading single_threaded.launch.py
+```
+
+## 已知限制
+
+- 单线程模式下看门狗会调用 `std::abort()` 强制终止进程，这在演示中是预期行为，但若集成到更大系统中时需注意不应在正式代码中使用 `abort` 代替优雅关闭。
+- `on_heavy_calculation` 使用 `std::this_thread::sleep_for(2000ms)` 模拟阻塞，这在 `MultiThreadedExecutor` + 单线程场景下（`thread_count:=1`）仍会完全阻塞整个执行器，符合预期演示目标，但不能代表真实计算场景。
+- `blocking_node.hpp` 声明了 `callback_group_3_` 成员，但 `blocking_node.cpp` 构造函数中仅创建了 `callback_group_1_` 和 `callback_group_2_`，`callback_group_3_` 始终为 `nullptr`（看门狗定时器实际运行在独立 `std::thread` 中而非 BT 回调组）。
+- 看门狗心跳超时阈值（1.0 秒）硬编码在 `executor_demo_main.cpp` 中，无法通过参数调整。
+
+## 相关学习资源
 
 - [ROS 2 官方文档 - Executors](https://docs.ros.org/en/rolling/Concepts/About-Executors.html)
 - [ROS 2 Callback Groups 教程](https://docs.ros.org/en/rolling/How-To-Guides/Using-callback-groups.html)

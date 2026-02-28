@@ -1,3 +1,81 @@
+# ros2_learning_tf_quaternion_demo
+
+> 通过三个可交互演示节点和 RViz 可视化，讲解四元数（Quaternion）旋转表示与 ROS 2 TF 坐标变换系统的核心概念。
+
+## 功能描述
+
+本包包含三个独立的演示节点：
+
+- **`quaternion_demo`**：每秒循环展示 6 种四元数概念（单位四元数、绕 X/Y/Z 轴旋转 90°、欧拉角转换、四元数乘法），通过向 `/quaternion_demo/markers` 发布 `MarkerArray` 在 RViz 中绘制带标注的坐标轴箭头。
+- **`tf_broadcaster_demo`**：以 10 Hz 广播 4 层级 TF 树（`world` → `robot_base` → `rotating_platform`/`target_object` → `sensor_frame`），其中 `rotating_platform` 绕 Z 轴匀速旋转，`target_object` 沿圆弧轨道运动。
+- **`tf_listener_demo`**：每秒查询并打印三组变换：传感器在世界坐标系中的位姿、传感器坐标系内一点转换到世界坐标系的结果、目标物体相对于传感器的距离。
+
+## 运行命令
+
+```bash
+# 编译
+cd /root/Ros2Learning/ros2_ws
+colcon build --packages-select ros2_learning_tf_quaternion_demo
+source install/setup.bash
+
+# 一键启动所有节点 + RViz
+ros2 launch ros2_learning_tf_quaternion_demo demo.launch.py
+
+# 单独运行各节点
+ros2 run ros2_learning_tf_quaternion_demo quaternion_demo
+ros2 run ros2_learning_tf_quaternion_demo tf_broadcaster_demo
+ros2 run ros2_learning_tf_quaternion_demo tf_listener_demo
+
+# 常用调试命令
+ros2 run tf2_tools view_frames           # 生成 TF 树 PDF
+ros2 run tf2_ros tf2_echo world sensor_frame  # 实时查看特定变换
+```
+
+## 输入/输出
+
+### quaternion_demo 节点
+
+| 方向 | 名称 | 类型 | 说明 |
+|---|---|---|---|
+| 发布 | `/quaternion_demo/markers` | `visualization_msgs/msg/MarkerArray` | 6 组坐标轴箭头和文字标注，`frame_id=world` |
+
+### tf_broadcaster_demo 节点
+
+| 方向 | 名称 | 类型 | 说明 |
+|---|---|---|---|
+| 发布 | `/tf` | `tf2_msgs/msg/TFMessage` | 动态 TF：`robot_base`、`rotating_platform`、`sensor_frame`、`target_object` |
+
+> `world` → `map` 之间的静态 TF 由 launch 文件中的 `static_transform_publisher` 发布。
+
+### tf_listener_demo 节点
+
+| 方向 | 名称 | 类型 | 说明 |
+|---|---|---|---|
+| 订阅 | `/tf` / `/tf_static` | `tf2_msgs/msg/TFMessage` | 通过 `tf2_ros::Buffer` 监听所有变换 |
+
+### TF 树结构
+
+```
+map (static_transform_publisher)
+ └─ world
+     └─ robot_base
+         ├─ rotating_platform  （绕 Z 轴旋转，10 Hz 更新）
+         │   └─ sensor_frame   （固定偏移 +30° 俯仰）
+         └─ target_object      （圆弧轨道运动）
+```
+
+## 验收测试
+
+暂无，待补充。
+
+## 已知限制
+
+- `tf_listener_demo` 启动初期（约 1 秒内）会打印 `TransformException` 警告，属正常现象；TF 数据到达后自动恢复。
+- `quaternion_demo` 每个演示帧的 Marker `lifetime` 设置为 2 秒，切换间隔为 1 秒；若 RViz 刷新率低，可能出现闪烁。
+- RViz 配置依赖 `rviz/demo.rviz`，Fixed Frame 必须设置为 `world`；在无显示器的纯终端环境中 RViz 无法启动。
+
+---
+
 # ROS 2 四元数和 TF 变换演示
 
 本包通过交互式可视化和详细注释的代码，帮助您彻底理解四元数（Quaternion）和坐标变换（TF）的概念。

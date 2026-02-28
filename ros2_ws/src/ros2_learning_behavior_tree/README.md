@@ -1,6 +1,18 @@
-# ROS 2 BehaviorTree.CPP Learning Package
+# ros2_learning_behavior_tree
 
-本项目是一个用于学习和演示 **BehaviorTree.CPP (v4)** 与 **ROS 2** 集成的示例包。
+> 基于 BehaviorTree.CPP v4 的任务调度学习包，演示行为树节点注册、黑板数据流、子树组合与 Nav2 动作客户端集成，支持 mock 模式（无需 Nav2）和真实导航模式。
+
+## 功能描述
+
+本包通过构建多个可运行的行为树 XML 场景，演示以下核心概念：
+
+- **工厂模式注册**：在 `bt_main.cpp` 中以 `registerBuilder` + lambda 捕获 ROS 节点指针的方式注册所有自定义节点，解决异构依赖注入问题。
+- **BT 节点类型对比**：`SyncActionNode`（单次 tick 必须完成）vs `StatefulActionNode`（可返回 RUNNING 的长耗时节点）。
+- **黑板（Blackboard）数据流**：`GetLocationFromQueue` 作为生产者将地点名写入黑板，`MockMoveBase` 作为消费者读取并执行。
+- **容错（Fallback）逻辑**：`mock_fallback_demo.xml` 演示低成功率任务失败后触发恢复动作并重试的完整流程。
+- **子树（SubTree）组合**：`main_tree_composition.xml` 调用 `fetch_subtree.xml` 中定义的可复用逻辑单元。
+- **Nav2 真实导航**：`MoveBase` 节点封装 `navigate_to_pose` 动作客户端，通过 `simple_patrol.xml` 在仿真/实体机器人上巡逻。
+- **Groot2 实时监控**：进程启动后自动在端口 1667 发布树状态，可用 Groot2 可视化调试。
 
 ## 运行依赖 (重要)
 
@@ -89,6 +101,52 @@ ros2 launch ros2_learning_behavior_tree bt_demo.launch.py tree_file:=simple_patr
 3. 输入 `localhost`，点击连接即可看到当前树的实时状态（变绿色代表运行中）。
 
 ---
+
+## 输入/输出
+
+本包为纯执行端，不发布话题也不提供服务。与外部系统的接口均通过 BT 节点内部封装：
+
+| 方向 | 接口 | 类型 | 说明 |
+| :--- | :--- | :--- | :--- |
+| 动作客户端（输出）| `/navigate_to_pose` | `nav2_msgs/action/NavigateToPose` | `MoveBase` 节点（真实模式）向 Nav2 发送导航目标 |
+
+Mock 节点（`MockMoveBase`、`MockRecovery`、`GetLocationFromQueue`）不与任何外部话题/服务交互，所有数据交换通过 BT 黑板完成。
+
+### 黑板端口汇总
+
+| 节点 | 端口名 | 方向 | 类型 | 说明 |
+| :--- | :--- | :--- | :--- | :--- |
+| `GetLocationFromQueue` | `target_location` | Out | `std::string` | 依次输出队列中的地点名称 |
+| `MockMoveBase` | `location` | In | `std::string` | 读取目标地点名称（仅打日志用） |
+| `MockMoveBase` | `probability` | In | `double` | 模拟成功概率（0.0~1.0） |
+| `MockMoveBase` | `duration` | In | `double` | 模拟执行耗时（秒） |
+| `MockRecovery` | `type` | In | `std::string` | 恢复动作类型标识（如 "rotate"） |
+| `MockRecovery` | `duration` | In | `double` | 模拟恢复耗时（秒） |
+| `MoveBase` | `goal_x` | In | `double` | 导航目标 X 坐标（米） |
+| `MoveBase` | `goal_y` | In | `double` | 导航目标 Y 坐标（米） |
+| `MoveBase` | `goal_yaw` | In | `double` | 导航目标偏航角（弧度） |
+
+## 验收测试
+
+```bash
+# 在 ros2_ws/ 目录下执行
+colcon build --packages-select ros2_learning_behavior_tree
+colcon test --packages-select ros2_learning_behavior_tree
+colcon test-result --verbose
+```
+
+测试目标：`test_simple_patrol`（gtest）
+
+测试内容：以 `simple_patrol.xml` 为输入，验证工厂能够正确注册 `MoveBase` 和 `SimpleArmAction` 节点并成功实例化行为树（无异常抛出即通过）。
+
+**注意**：测试不运行 ROS 2 spin 循环，也不连接真实 Nav2，仅验证节点注册与树实例化的正确性。
+
+## 已知限制
+
+- `simple_patrol.xml`（真实模式）在没有 Nav2 动作服务器的环境下，`MoveBase` 节点会在 `onStart()` 阶段无限等待服务器上线，程序不会报错退出，而是卡死——应改为设置等待超时。
+- Groot2 发布器硬编码端口 1667，多实例并发启动时会端口冲突。
+- `bt_main.cpp` 的 tick 循环以 10 Hz 固定频率运行，未根据实际 BT 节点的时间特征自适应调整，会引入最多 100 ms 的额外响应延迟。
+- Mock 节点通过 `std::this_thread::sleep_for` 模拟耗时，会在单线程执行器下阻塞 `rclcpp::spin_some`，导致同一进程内其他 ROS 回调被延迟。
 
 ## 详细教程
 更多概念解释请参考：[docs/bt_learning_roadmap.md](docs/bt_learning_roadmap.md)

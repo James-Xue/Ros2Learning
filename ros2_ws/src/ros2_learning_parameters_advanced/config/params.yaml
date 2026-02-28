@@ -1,0 +1,10 @@
+# YAML 参数文件示例
+# 通过 launch 文件的 parameters=[...] 字段注入到节点
+# 也可手动传入：ros2 run ... --ros-args --params-file <path>/params.yaml
+
+param_demo_node:
+  ros__parameters:
+    print_rate_hz: 2          # 覆盖代码中的默认值 1
+    scale_factor: 3.14        # 覆盖默认值 1.0
+    node_label: "from_yaml"   # 覆盖默认值 "default_label"
+    verbose: true             # 开启详细输出

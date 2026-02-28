@@ -211,6 +211,31 @@ ros2 run ros2_learning_sysinfo_publisher sysinfo_publisher \
 
 ---
 
+## 输入/输出
+
+### 话题
+
+| 方向 | 名称（默认） | 类型 | 说明 |
+|---|---|---|---|
+| 发布 | `/ros2_learning/sysinfo` | `std_msgs/msg/String` | 以 JSON 字符串格式发布系统信息快照 |
+
+话题名称和发布频率均可通过 ROS 2 参数在运行时覆盖（见"使用方法"节）。
+
+## 验收测试
+
+暂无，待补充。
+
+`SystemReader` 类不依赖 ROS，可独立进行单元测试；测试框架建议使用 `gtest`，验证各 `read*()` 函数在当前 Linux 环境下的返回值非空且格式正确。
+
+## 已知限制
+
+- 仅支持 Linux 系统，依赖 `/proc` 和 `/etc/os-release` 文件系统；不兼容 macOS / Windows。
+- JSON 字符串通过 `std_msgs/msg/String` 发布，下游节点需自行解析；若需结构化消息，应定义自定义消息类型。
+- 网络流量字段（`rx_bytes`/`tx_bytes`）为自系统启动以来的累计值，而非速率；若需速率，需由消费端计算差分。
+- 发布频率过高（`publish_rate_hz` > 10）时，读取 `/proc` 的开销会显著增加 CPU 占用。
+
+---
+
 ## 🔗 配套工具
 
 ### 可视化查看器

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ros2_learning_parameters_advanced</name>
+  <version>0.0.1</version>
+  <description>ROS 2 参数进阶演示：参数回调验证、动态参数、YAML 加载、parameter_event 订阅。</description>
+  <maintainer email="user@example.com">Ros2Learning</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>rcl_interfaces</depend>
+
+  <!-- launch 文件运行时依赖 -->
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
