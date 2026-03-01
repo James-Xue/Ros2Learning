@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>ros2_learning_lifecycle</name>
+  <version>0.0.1</version>
+  <description>
+    ROS 2 生命周期节点进阶演示：多节点状态机（SensorNode + ProcessorNode）、
+    正确的 timer/publisher 生命周期管理、错误状态注入与 on_error 恢复、
+    LifecycleManagerNode 通过 ChangeState 服务自动编排多节点。
+  </description>
+  <maintainer email="user@example.com">Ros2Learning</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>rclcpp_components</depend>
+  <depend>std_msgs</depend>
+  <depend>lifecycle_msgs</depend>
+
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

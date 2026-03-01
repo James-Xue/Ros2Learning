@@ -1,0 +1,14 @@
+sensor_node:
+  ros__parameters:
+    sensor_id: "lidar_front"
+    publish_rate_hz: 3          # Hz，范围 [1, 10]
+
+processor_node:
+  ros__parameters:
+    configure_behavior: "success"  # 改为 "failure" 或 "error" 可测试错误路径
+    window_size: 5                 # 移动平均窗口大小，范围 [1, 20]
+
+lifecycle_manager_node:
+  ros__parameters:
+    managed_nodes: ["sensor_node", "processor_node"]
+    transition_delay_sec: 1.0     # configure → activate 之间的等待时间（秒）
