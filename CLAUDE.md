@@ -128,6 +128,59 @@ Most packages use `include/<package_name>/` with `#include "<package_name>/foo.h
 - **YAML/launch**: 2-space indent
 - **Package names**: lowercase with underscores (e.g., `ros2_learning_cpp`)
 
+## C++ Doxygen Documentation (MANDATORY)
+
+所有 C++ 代码（头文件 `.hpp` 与实现文件 `.cpp`）必须使用 Doxygen 风格注释，具体规则如下：
+
+### 文件头注释
+每个文件顶部必须包含：
+```cpp
+/**
+ * @file   filename.hpp
+ * @brief  一句话描述本文件的职责
+ *
+ * 可选的详细描述段落。
+ */
+```
+
+### 类注释
+```cpp
+/**
+ * @brief 一句话描述类的职责
+ *
+ * 详细说明类的设计意图、状态机、线程安全性等。
+ */
+class Foo {
+```
+
+### 成员函数注释
+```cpp
+/**
+ * @brief 一句话描述函数职责
+ *
+ * @param[in]  param1  参数说明
+ * @param[out] param2  输出参数说明
+ * @param[in,out] param3  读写参数说明
+ * @return 返回值说明（void 函数省略）
+ * @throws SomeException 何时抛出（若适用）
+ * @note   补充注意事项（可选）
+ * @warning 重要警告（可选）
+ */
+ReturnType bar(Type param1, Type& param2);
+```
+
+### 成员变量注释
+```cpp
+int value_;  ///< 简短描述（同行注释用 ///<）
+```
+
+### 强制要求
+1. **public / protected 接口必须 100% 覆盖**（类、函数、枚举、别名）
+2. **private 成员**：复杂逻辑必须注释，简单字段至少加 `///<` 行尾注释
+3. **`@brief` 必须是完整的一句话**，不得只写单词
+4. **参数方向标签**（`[in]`/`[out]`/`[in,out]`）必须标注
+5. 注释语言：中英文均可，同一文件保持一致
+
 ## VS Code Debugging (rclcpp Step-Through)
 
 First-time setup on a new machine:
