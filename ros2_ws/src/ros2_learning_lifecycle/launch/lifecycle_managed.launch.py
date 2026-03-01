@@ -28,6 +28,10 @@ def generate_launch_description():
     pkg_share = get_package_share_directory(_PKG)
     default_yaml = os.path.join(pkg_share, "config", "lifecycle_demo.yaml")
 
+    # sensor_node（被管理生命周期节点）：
+    # - 模拟传感器源，周期发布 /sensor_data。
+    # - 仅在被 manager activate 后才会真正开始对外发布数据。
+    # - 处于 inactive/unconfigured 时，节点存在但不会输出业务数据。
     sensor_node = LifecycleNode(
         package=_PKG,
         executable="sensor_node",
@@ -37,6 +41,10 @@ def generate_launch_description():
         parameters=[default_yaml],
     )
 
+    # processor_node（被管理生命周期节点）：
+    # - 订阅 /sensor_data，做简单处理后发布 /processed_data。
+    # - 与 sensor_node 一样，只有在 activate 后才进入“工作态”。
+    # - 通过生命周期状态切换，可观察配置阶段与运行阶段的差异。
     processor_node = LifecycleNode(
         package=_PKG,
         executable="processor_node",
@@ -46,6 +54,11 @@ def generate_launch_description():
         parameters=[default_yaml],
     )
 
+    # lifecycle_manager_node（普通 Node，管理者）：
+    # - 不是 LifecycleNode，本身不参与生命周期状态机。
+    # - 通过 /<node>/get_state 和 /<node>/change_state 服务，
+    #   按顺序驱动 sensor/processor 完成 configure -> activate。
+    # - 负责整体启动编排，便于演示“集中式生命周期管理”模式。
     lifecycle_manager = Node(
         package=_PKG,
         executable="lifecycle_manager_node",
@@ -54,6 +67,8 @@ def generate_launch_description():
         parameters=[default_yaml],
     )
 
+    # 启动顺序只影响进程拉起，不等同于生命周期状态切换顺序；
+    # 真正的 configure/activate 顺序由 lifecycle_manager_node 内部逻辑决定。
     return LaunchDescription([
         sensor_node,
         processor_node,

@@ -36,10 +36,15 @@ public:
     ~LifecycleManagerNode();
 
 private:
+    using ChangeState = lifecycle_msgs::srv::ChangeState;
+    using GetState = lifecycle_msgs::srv::GetState;
+    using ChangeStateClient = rclcpp::Client<ChangeState>;
+    using GetStateClient = rclcpp::Client<GetState>;
+
     struct ManagedNode {
         std::string name;
-        rclcpp::Client<lifecycle_msgs::srv::ChangeState>::SharedPtr change_state_client;
-        rclcpp::Client<lifecycle_msgs::srv::GetState>::SharedPtr    get_state_client;
+        ChangeStateClient::SharedPtr change_state_client;
+        GetStateClient::SharedPtr    get_state_client;
     };
 
     void startup_sequence();

@@ -63,6 +63,7 @@ def generate_launch_description():
     pkg_share = get_package_share_directory(_PKG)
     default_yaml = os.path.join(pkg_share, "config", "lifecycle_demo.yaml")
 
+    # 手动模式下，保留常用可调参数为 launch 参数，便于命令行快速覆盖。
     sensor_id_arg = DeclareLaunchArgument(
         "sensor_id", default_value="lidar_front",
         description="SensorNode 的 sensor_id 参数")
@@ -73,6 +74,10 @@ def generate_launch_description():
         "configure_behavior", default_value="success",
         description="ProcessorNode configure 行为：success / failure / error")
 
+    # sensor_node（被管理生命周期节点）：
+    # - 负责模拟传感器数据发布（/sensor_data）。
+    # - 启动后默认处于 Unconfigured，需手动 configure + activate 才会开始工作。
+    # - sensor_id / publish_rate_hz 支持 launch 参数覆盖，方便演示不同输入条件。
     sensor_node = LifecycleNode(
         package=_PKG,
         executable="sensor_node",
@@ -88,6 +93,10 @@ def generate_launch_description():
         ],
     )
 
+    # processor_node（被管理生命周期节点）：
+    # - 订阅 /sensor_data 并输出 /processed_data。
+    # - 同样默认 Unconfigured，需手动推进生命周期状态机。
+    # - configure_behavior 用于演示 success/failure/error 三类配置路径。
     processor_node = LifecycleNode(
         package=_PKG,
         executable="processor_node",
@@ -100,6 +109,8 @@ def generate_launch_description():
         ],
     )
 
+    # 本 launch 不启动 lifecycle_manager_node，目的是练习 CLI 手动驱动生命周期。
+    # 先注册 launch 参数，再拉起节点进程；真正状态切换顺序由你执行的 CLI 决定。
     return LaunchDescription([
         sensor_id_arg,
         publish_rate_arg,

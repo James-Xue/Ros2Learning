@@ -42,11 +42,11 @@ LifecycleManagerNode::LifecycleManagerNode(const rclcpp::NodeOptions & options)
     for (const auto & name : node_names) {
         ManagedNode mn;
         mn.name = name;
-        mn.change_state_client = this->create_client<lifecycle_msgs::srv::ChangeState>(
+        mn.change_state_client = this->create_client<ChangeState>(
             "/" + name + "/change_state",
             rclcpp::ServicesQoS(),
             service_cb_group_);
-        mn.get_state_client = this->create_client<lifecycle_msgs::srv::GetState>(
+        mn.get_state_client = this->create_client<GetState>(
             "/" + name + "/get_state",
             rclcpp::ServicesQoS(),
             service_cb_group_);
@@ -184,7 +184,7 @@ bool LifecycleManagerNode::wait_for_service_ready(
 bool LifecycleManagerNode::change_state(
     const ManagedNode & node, uint8_t transition_id)
 {
-    auto request = std::make_shared<lifecycle_msgs::srv::ChangeState::Request>();
+    auto request = std::make_shared<ChangeState::Request>();
     request->transition.id = transition_id;
 
     auto future = node.change_state_client->async_send_request(request);
@@ -204,7 +204,7 @@ bool LifecycleManagerNode::change_state(
 // ──────────────────────────────────────────────────────────────
 uint8_t LifecycleManagerNode::get_state(const ManagedNode & node)
 {
-    auto request = std::make_shared<lifecycle_msgs::srv::GetState::Request>();
+    auto request = std::make_shared<GetState::Request>();
     auto future  = node.get_state_client->async_send_request(request);
 
     if (future.wait_for(5s) != std::future_status::ready) {
