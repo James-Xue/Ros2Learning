@@ -1,5 +1,10 @@
 #pragma once
 
+/**
+ * @file processor_node.hpp
+ * @brief ProcessorNode 生命周期节点声明。
+ */
+
 #include <deque>
 #include <string>
 
@@ -12,7 +17,8 @@ namespace ros2_learning_lifecycle
 {
 
 /**
- * ProcessorNode — 演示级联 LifecycleNode：订阅 SensorNode 数据并发布处理结果。
+ * @class ProcessorNode
+ * @brief 订阅传感器数据并发布处理结果的 LifecycleNode。
  *
  * 核心演示点：
  * 1. 订阅回调中主动检查自身状态，避免在 Inactive 时处理数据
@@ -32,29 +38,79 @@ namespace ros2_learning_lifecycle
 class ProcessorNode : public rclcpp_lifecycle::LifecycleNode
 {
 public:
+    /// 生命周期回调统一返回类型。
     using CallbackReturn =
         rclcpp_lifecycle::node_interfaces::LifecycleNodeInterface::CallbackReturn;
+    /// Float64 生命周期发布器类型别名。
     using LifecyclePublisherFloat64 =
         rclcpp_lifecycle::LifecyclePublisher<std_msgs::msg::Float64>;
 
+    /**
+     * @brief 构造 ProcessorNode 并声明参数。
+     * @param options ROS 2 节点选项。
+     */
     explicit ProcessorNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions{});
 
+    /**
+     * @brief 执行 Unconfigured -> Inactive（或 FAILURE/ERROR 分支）。
+     * @param state 当前生命周期状态（由框架传入）。
+     * @return 生命周期回调结果。
+     */
     CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
+    /**
+     * @brief 执行 Inactive -> Active，激活发布器。
+     * @param state 当前生命周期状态（由框架传入）。
+     * @return 生命周期回调结果。
+     */
     CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
+    /**
+     * @brief 执行 Active -> Inactive，停用发布器。
+     * @param state 当前生命周期状态（由框架传入）。
+     * @return 生命周期回调结果。
+     */
     CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
+    /**
+     * @brief 执行 Inactive -> Unconfigured，清理资源。
+     * @param state 当前生命周期状态（由框架传入）。
+     * @return 生命周期回调结果。
+     */
     CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
+    /**
+     * @brief 执行 Any -> Finalized，清理资源。
+     * @param state 当前生命周期状态（由框架传入）。
+     * @return 生命周期回调结果。
+     */
     CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
+    /**
+     * @brief ErrorProcessing 状态回调，执行恢复逻辑。
+     * @param state 触发错误前的状态。
+     * @return 返回 SUCCESS 将回到 Unconfigured。
+     */
     CallbackReturn on_error(const rclcpp_lifecycle::State & state) override;
 
-    // 测试可访问接口
+    /**
+     * @brief 提供给测试代码的发布器访问接口。
+     * @return 内部生命周期发布器共享指针。
+     */
     LifecyclePublisherFloat64::SharedPtr get_publisher() const { return publisher_; }
 
 private:
+    /**
+     * @brief 订阅 /sensor_data 的回调，计算并发布窗口均值。
+     * @param msg 输入传感器消息。
+     */
     void on_sensor_data(const std_msgs::msg::Float64 & msg);
+
+    /**
+     * @brief 清理订阅、发布器和内部缓存窗口。
+     */
     void cleanup_resources();
 
+    /// 传感器数据订阅器（topic: /sensor_data）。
     rclcpp::Subscription<std_msgs::msg::Float64>::SharedPtr subscription_;
+    /// 处理结果生命周期发布器（topic: /processed_data）。
     LifecyclePublisherFloat64::SharedPtr publisher_;
+    /// 移动平均窗口缓存。
     std::deque<double> window_;
 };
 

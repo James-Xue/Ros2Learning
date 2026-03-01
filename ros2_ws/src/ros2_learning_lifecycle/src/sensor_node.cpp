@@ -1,5 +1,10 @@
 #include "ros2_learning_lifecycle/sensor_node.hpp"
 
+/**
+ * @file sensor_node.cpp
+ * @brief SensorNode 生命周期回调实现。
+ */
+
 #include <chrono>
 #include <cmath>
 
@@ -12,6 +17,10 @@ using namespace std::chrono_literals;
 namespace ros2_learning_lifecycle
 {
 
+/**
+ * @brief 构造节点并声明参数，不创建业务 ROS 资源。
+ * @param options ROS 2 节点选项。
+ */
 SensorNode::SensorNode(const rclcpp::NodeOptions & options)
 : rclcpp_lifecycle::LifecycleNode("sensor_node", options)
 {
@@ -35,10 +44,11 @@ SensorNode::SensorNode(const rclcpp::NodeOptions & options)
     RCLCPP_INFO(get_logger(), "[SensorNode] Unconfigured — 节点已构造，等待 configure 指令");
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_configure: Unconfigured → Inactive
-// 只创建 publisher，不创建 timer（timer 在 on_activate 创建）
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Unconfigured -> Inactive。
+ * @param state 当前生命周期状态（未使用）。
+ * @return SUCCESS 表示发布器创建成功。
+ */
 SensorNode::CallbackReturn
 SensorNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -51,10 +61,11 @@ SensorNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_activate: Inactive → Active
-// 先激活 publisher（父类调用），再创建 timer
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Inactive -> Active。
+ * @param state 当前生命周期状态。
+ * @return SUCCESS 表示已激活发布器并启动定时器。
+ */
 SensorNode::CallbackReturn
 SensorNode::on_activate(const rclcpp_lifecycle::State & state)
 {
@@ -70,10 +81,11 @@ SensorNode::on_activate(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_deactivate: Active → Inactive
-// 先销毁 timer（停止定时），再停用 publisher（父类调用）
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Active -> Inactive。
+ * @param state 当前生命周期状态。
+ * @return SUCCESS 表示已停止定时器并停用发布器。
+ */
 SensorNode::CallbackReturn
 SensorNode::on_deactivate(const rclcpp_lifecycle::State & state)
 {
@@ -86,10 +98,11 @@ SensorNode::on_deactivate(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_cleanup: Inactive → Unconfigured
-// 释放 publisher（timer 在 on_deactivate 已销毁）
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Inactive -> Unconfigured。
+ * @param state 当前生命周期状态（未使用）。
+ * @return SUCCESS 表示资源已清理。
+ */
 SensorNode::CallbackReturn
 SensorNode::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -98,10 +111,11 @@ SensorNode::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_shutdown: Any → Finalized
-// 无论从哪个状态 shutdown，都清理所有资源
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Any -> Finalized。
+ * @param state 触发 shutdown 前的状态。
+ * @return SUCCESS 表示已完成终态清理。
+ */
 SensorNode::CallbackReturn
 SensorNode::on_shutdown(const rclcpp_lifecycle::State & state)
 {
@@ -112,10 +126,9 @@ SensorNode::on_shutdown(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_timer: 仅在 Active 状态下被调用（因为 timer 在 on_activate 创建）
-// 发布模拟传感器读数（正弦波）
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 定时器回调，发布正弦波模拟传感器数据。
+ */
 void SensorNode::on_timer()
 {
     simulated_value_ += 0.1;

@@ -1,3 +1,8 @@
+# @file lifecycle_demo.yaml
+# @brief 生命周期演示包默认参数配置。
+# @details
+# 提供 sensor_node、processor_node、lifecycle_manager_node 的默认参数。
+
 sensor_node:
   ros__parameters:
     sensor_id: "lidar_front"

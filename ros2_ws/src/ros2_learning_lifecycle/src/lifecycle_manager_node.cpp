@@ -1,5 +1,10 @@
 #include "ros2_learning_lifecycle/lifecycle_manager_node.hpp"
 
+/**
+ * @file lifecycle_manager_node.cpp
+ * @brief LifecycleManagerNode 生命周期编排实现。
+ */
+
 #include <chrono>
 #include <thread>
 
@@ -14,6 +19,10 @@ using lifecycle_msgs::msg::Transition;
 namespace ros2_learning_lifecycle
 {
 
+/**
+ * @brief 构造管理器节点并创建服务客户端、执行器线程与启动线程。
+ * @param options ROS 2 节点选项。
+ */
 LifecycleManagerNode::LifecycleManagerNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("lifecycle_manager_node", options)
 {
@@ -74,6 +83,9 @@ LifecycleManagerNode::LifecycleManagerNode(const rclcpp::NodeOptions & options)
         managed_nodes_.size());
 }
 
+/**
+ * @brief 停止并回收后台线程资源。
+ */
 LifecycleManagerNode::~LifecycleManagerNode()
 {
     // 先停止 startup 线程
@@ -87,10 +99,9 @@ LifecycleManagerNode::~LifecycleManagerNode()
     }
 }
 
-// ──────────────────────────────────────────────────────────────
-// 主要启动序列：等待服务 → configure all → 延迟 → activate all
-// 在独立 std::thread 中运行，future.wait_for() 等待服务响应
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 执行完整启动序列：等待服务、configure 全部、延迟后 activate 全部。
+ */
 void LifecycleManagerNode::startup_sequence()
 {
     // 1. 等待所有节点服务就绪
@@ -158,9 +169,12 @@ void LifecycleManagerNode::startup_sequence()
     RCLCPP_INFO(get_logger(), "[LifecycleManager] ── 所有节点已 Active ── 管理器进入待机状态");
 }
 
-// ──────────────────────────────────────────────────────────────
-// 辅助：等待服务就绪（在 startup_thread_ 中调用，可以阻塞）
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 等待单个被管理节点的 get_state/change_state 服务可用。
+ * @param node 被管理节点。
+ * @param timeout 服务等待超时时间。
+ * @return 服务均可用返回 true，否则返回 false。
+ */
 bool LifecycleManagerNode::wait_for_service_ready(
     const ManagedNode & node, std::chrono::seconds timeout)
 {
@@ -177,10 +191,12 @@ bool LifecycleManagerNode::wait_for_service_ready(
     return true;
 }
 
-// ──────────────────────────────────────────────────────────────
-// 辅助：发送 change_state 请求
-// service_executor_thread_ 在后台处理响应，future.wait_for() 等待结果
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 发送 change_state 服务请求。
+ * @param node 被管理节点。
+ * @param transition_id 生命周期转换 ID。
+ * @return 转换成功返回 true，否则返回 false。
+ */
 bool LifecycleManagerNode::change_state(
     const ManagedNode & node, uint8_t transition_id)
 {
@@ -199,9 +215,11 @@ bool LifecycleManagerNode::change_state(
     return future.get()->success;
 }
 
-// ──────────────────────────────────────────────────────────────
-// 辅助：查询当前状态 id
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 查询被管理节点当前生命周期主状态 ID。
+ * @param node 被管理节点。
+ * @return 当前状态 ID；超时则返回 PRIMARY_STATE_UNKNOWN。
+ */
 uint8_t LifecycleManagerNode::get_state(const ManagedNode & node)
 {
     auto request = std::make_shared<GetState::Request>();

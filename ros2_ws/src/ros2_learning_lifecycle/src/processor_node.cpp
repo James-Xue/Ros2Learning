@@ -1,5 +1,10 @@
 #include "ros2_learning_lifecycle/processor_node.hpp"
 
+/**
+ * @file processor_node.cpp
+ * @brief ProcessorNode 生命周期回调与数据处理实现。
+ */
+
 #include <numeric>
 
 #include <rcl_interfaces/msg/parameter_descriptor.hpp>
@@ -9,6 +14,10 @@
 namespace ros2_learning_lifecycle
 {
 
+/**
+ * @brief 构造节点并声明行为注入与窗口参数。
+ * @param options ROS 2 节点选项。
+ */
 ProcessorNode::ProcessorNode(const rclcpp::NodeOptions & options)
 : rclcpp_lifecycle::LifecycleNode("processor_node", options)
 {
@@ -35,10 +44,11 @@ ProcessorNode::ProcessorNode(const rclcpp::NodeOptions & options)
     RCLCPP_INFO(get_logger(), "[ProcessorNode] Unconfigured — 节点已构造，等待 configure 指令");
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_configure: Unconfigured → Inactive（或失败/错误）
-// 演示三种返回值：SUCCESS / FAILURE / ERROR
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Unconfigured -> Inactive（或失败/错误分支）。
+ * @param state 当前生命周期状态（未使用）。
+ * @return SUCCESS/FAILURE/ERROR，取决于 configure_behavior 参数。
+ */
 ProcessorNode::CallbackReturn
 ProcessorNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -71,9 +81,11 @@ ProcessorNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_activate: Inactive → Active
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Inactive -> Active。
+ * @param state 当前生命周期状态。
+ * @return SUCCESS 表示发布器已激活。
+ */
 ProcessorNode::CallbackReturn
 ProcessorNode::on_activate(const rclcpp_lifecycle::State & state)
 {
@@ -82,9 +94,11 @@ ProcessorNode::on_activate(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_deactivate: Active → Inactive
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Active -> Inactive。
+ * @param state 当前生命周期状态。
+ * @return SUCCESS 表示发布器已停用。
+ */
 ProcessorNode::CallbackReturn
 ProcessorNode::on_deactivate(const rclcpp_lifecycle::State & state)
 {
@@ -93,9 +107,11 @@ ProcessorNode::on_deactivate(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_cleanup: Inactive → Unconfigured
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Inactive -> Unconfigured。
+ * @param state 当前生命周期状态（未使用）。
+ * @return SUCCESS 表示资源已清理。
+ */
 ProcessorNode::CallbackReturn
 ProcessorNode::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
 {
@@ -104,9 +120,11 @@ ProcessorNode::on_cleanup(const rclcpp_lifecycle::State & /*state*/)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_shutdown: Any → Finalized
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期回调：Any -> Finalized。
+ * @param state 触发 shutdown 前的状态。
+ * @return SUCCESS 表示终态清理完成。
+ */
 ProcessorNode::CallbackReturn
 ProcessorNode::on_shutdown(const rclcpp_lifecycle::State & state)
 {
@@ -116,14 +134,11 @@ ProcessorNode::on_shutdown(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// on_error: ErrorProcessing → Unconfigured（返回 SUCCESS 时）
-//           ErrorProcessing → Finalized   （返回 FAILURE/ERROR 时）
-//
-// 当 on_configure 返回 ERROR 后，节点进入 ErrorProcessing 状态，
-// rclcpp_lifecycle 自动调用此回调。
-// 返回 SUCCESS 表示错误已处理，节点可恢复到 Unconfigured 继续使用。
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 生命周期错误回调：ErrorProcessing -> Unconfigured（返回 SUCCESS）。
+ * @param state 触发错误前的状态。
+ * @return SUCCESS 表示错误已处理并允许恢复。
+ */
 ProcessorNode::CallbackReturn
 ProcessorNode::on_error(const rclcpp_lifecycle::State & state)
 {
@@ -140,9 +155,10 @@ ProcessorNode::on_error(const rclcpp_lifecycle::State & state)
     return CallbackReturn::SUCCESS;
 }
 
-// ──────────────────────────────────────────────────────────────
-// 订阅回调：仅在 publisher 已激活时处理数据
-// ──────────────────────────────────────────────────────────────
+/**
+ * @brief 订阅回调，计算窗口均值并在 Active 状态下发布。
+ * @param msg 传感器输入数据。
+ */
 void ProcessorNode::on_sensor_data(const std_msgs::msg::Float64 & msg)
 {
     // publisher_ 在 Inactive 状态下存在但未激活，此处主动过滤
@@ -168,6 +184,9 @@ void ProcessorNode::on_sensor_data(const std_msgs::msg::Float64 & msg)
         msg.data, static_cast<int>(window_.size()), avg);
 }
 
+/**
+ * @brief 清理订阅、发布器与窗口缓存。
+ */
 void ProcessorNode::cleanup_resources()
 {
     subscription_.reset();

@@ -1,16 +1,17 @@
-"""
-lifecycle_managed.launch.py — LifecycleManager 自动管理模式
-
+"""!
+@file lifecycle_managed.launch.py
+@brief LifecycleManager 自动管理模式启动文件。
+@details
 同时启动 sensor_node、processor_node 和 lifecycle_manager_node。
 manager 会在启动约 1 秒后自动顺序执行：
-  1. configure sensor_node → configure processor_node
+  1. configure sensor_node -> configure processor_node
   2. 等待 transition_delay_sec
-  3. activate sensor_node → activate processor_node
+  3. activate sensor_node -> activate processor_node
 
-── 启动 ──────────────────────────────────────────────────────────────
+启动：
   ros2 launch ros2_learning_lifecycle lifecycle_managed.launch.py
 
-── 观察（另开终端）──────────────────────────────────────────────────
+观察（另开终端）：
   ros2 topic echo /sensor_data       # 应在 activate 后出现数据
   ros2 topic echo /processed_data    # 应在 activate 后出现平均值
   ros2 lifecycle list /sensor_node   # 确认节点处于 active 状态
@@ -25,6 +26,10 @@ _PKG = "ros2_learning_lifecycle"
 
 
 def generate_launch_description():
+    """!
+    @brief 生成自动托管模式 LaunchDescription。
+    @return launch.LaunchDescription 启动描述对象。
+    """
     pkg_share = get_package_share_directory(_PKG)
     default_yaml = os.path.join(pkg_share, "config", "lifecycle_demo.yaml")
 

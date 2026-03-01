@@ -1,3 +1,8 @@
+<!--
+@file README.md
+@brief ros2_learning_lifecycle 包使用与设计说明。
+-->
+
 # ros2_learning_lifecycle
 
 ROS 2 生命周期节点（LifecycleNode）进阶演示包。

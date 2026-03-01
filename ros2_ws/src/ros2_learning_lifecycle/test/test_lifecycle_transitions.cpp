@@ -1,3 +1,8 @@
+/**
+ * @file test_lifecycle_transitions.cpp
+ * @brief 生命周期状态切换单元测试。
+ */
+
 #include <gtest/gtest.h>
 
 #include "rclcpp/rclcpp.hpp"
@@ -9,16 +14,24 @@
 using LS = lifecycle_msgs::msg::State;
 using LT = lifecycle_msgs::msg::Transition;
 
-// ──────────────────────────────────────────────────────────────
-// 测试夹具
-// ──────────────────────────────────────────────────────────────
+/**
+ * @class LifecycleTransitionTest
+ * @brief 生命周期节点状态切换测试夹具。
+ */
 class LifecycleTransitionTest : public ::testing::Test
 {
 protected:
+    /// @brief 初始化 rclcpp 运行时。
     void SetUp() override { rclcpp::init(0, nullptr); }
+    /// @brief 关闭 rclcpp 运行时。
     void TearDown() override { rclcpp::shutdown(); }
 
-    // 触发转换并返回新状态 id
+    /**
+     * @brief 触发指定生命周期转换并返回新状态 ID。
+     * @param node 目标生命周期节点。
+     * @param transition_id 生命周期转换 ID。
+     * @return 转换后的主状态 ID。
+     */
     uint8_t do_transition(
         rclcpp_lifecycle::LifecycleNode::SharedPtr node, uint8_t transition_id)
     {
@@ -27,11 +40,9 @@ protected:
     }
 };
 
-// ──────────────────────────────────────────────────────────────
-// SensorNode 测试
-// ──────────────────────────────────────────────────────────────
-
-// 1. configure → Inactive
+/**
+ * @brief 验证 SensorNode configure 后进入 Inactive。
+ */
 TEST_F(LifecycleTransitionTest, SensorNodeConfigureSuccess)
 {
     auto node = std::make_shared<ros2_learning_lifecycle::SensorNode>();
@@ -41,7 +52,9 @@ TEST_F(LifecycleTransitionTest, SensorNodeConfigureSuccess)
     EXPECT_EQ(new_state, LS::PRIMARY_STATE_INACTIVE);
 }
 
-// 2. 完整正向循环：configure → activate → deactivate → cleanup → Unconfigured
+/**
+ * @brief 验证 SensorNode 完整正向生命周期循环。
+ */
 TEST_F(LifecycleTransitionTest, SensorNodeFullCycle)
 {
     auto node = std::make_shared<ros2_learning_lifecycle::SensorNode>();
@@ -52,7 +65,9 @@ TEST_F(LifecycleTransitionTest, SensorNodeFullCycle)
     EXPECT_EQ(do_transition(node, LT::TRANSITION_CLEANUP),    LS::PRIMARY_STATE_UNCONFIGURED);
 }
 
-// 3. 从 Active 状态 shutdown → Finalized
+/**
+ * @brief 验证 SensorNode 从 Active 执行 shutdown 后进入 Finalized。
+ */
 TEST_F(LifecycleTransitionTest, SensorNodeShutdownFromActive)
 {
     auto node = std::make_shared<ros2_learning_lifecycle::SensorNode>();
@@ -66,7 +81,9 @@ TEST_F(LifecycleTransitionTest, SensorNodeShutdownFromActive)
     EXPECT_EQ(final_state, LS::PRIMARY_STATE_FINALIZED);
 }
 
-// 4. publisher 在 configure 后存在但未激活
+/**
+ * @brief 验证 SensorNode 发布器在 configure 后存在但未激活。
+ */
 TEST_F(LifecycleTransitionTest, SensorPublisherInactiveAfterConfigure)
 {
     auto node = std::make_shared<ros2_learning_lifecycle::SensorNode>();
@@ -76,7 +93,9 @@ TEST_F(LifecycleTransitionTest, SensorPublisherInactiveAfterConfigure)
     EXPECT_FALSE(node->get_publisher()->is_activated());
 }
 
-// 5. publisher 在 activate 后处于激活状态
+/**
+ * @brief 验证 SensorNode 发布器在 activate 后已激活。
+ */
 TEST_F(LifecycleTransitionTest, SensorPublisherActiveAfterActivate)
 {
     auto node = std::make_shared<ros2_learning_lifecycle::SensorNode>();
@@ -87,7 +106,9 @@ TEST_F(LifecycleTransitionTest, SensorPublisherActiveAfterActivate)
     EXPECT_TRUE(node->get_publisher()->is_activated());
 }
 
-// 6. deactivate 后 publisher 停用（timer 已销毁）
+/**
+ * @brief 验证 SensorNode 在 deactivate 后发布器停用。
+ */
 TEST_F(LifecycleTransitionTest, SensorPublisherInactiveAfterDeactivate)
 {
     auto node = std::make_shared<ros2_learning_lifecycle::SensorNode>();
@@ -99,11 +120,9 @@ TEST_F(LifecycleTransitionTest, SensorPublisherInactiveAfterDeactivate)
     EXPECT_FALSE(node->get_publisher()->is_activated());
 }
 
-// ──────────────────────────────────────────────────────────────
-// ProcessorNode 测试
-// ──────────────────────────────────────────────────────────────
-
-// 7. configure_behavior="failure" → configure 失败，回到 Unconfigured
+/**
+ * @brief 验证 ProcessorNode 注入 failure 时 configure 回到 Unconfigured。
+ */
 TEST_F(LifecycleTransitionTest, ProcessorNodeFailureOnConfigure)
 {
     rclcpp::NodeOptions opts;
@@ -115,7 +134,9 @@ TEST_F(LifecycleTransitionTest, ProcessorNodeFailureOnConfigure)
     EXPECT_EQ(state_after, LS::PRIMARY_STATE_UNCONFIGURED);
 }
 
-// 8. configure_behavior="error" → on_error 触发后回到 Unconfigured
+/**
+ * @brief 验证 ProcessorNode 注入 error 时通过 on_error 恢复到 Unconfigured。
+ */
 TEST_F(LifecycleTransitionTest, ProcessorNodeErrorOnConfigure)
 {
     rclcpp::NodeOptions opts;

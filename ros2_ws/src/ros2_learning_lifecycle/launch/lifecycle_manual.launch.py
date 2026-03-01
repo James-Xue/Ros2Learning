@@ -1,19 +1,20 @@
-"""
-lifecycle_manual.launch.py — 手动 CLI 控制模式
-
+"""!
+@file lifecycle_manual.launch.py
+@brief 手动 CLI 控制模式启动文件。
+@details
 启动两个 LifecycleNode（sensor_node、processor_node），不启动管理器。
 节点初始状态为 Unconfigured，需手动通过 ros2 lifecycle CLI 驱动状态转换。
 
-── 启动 ──────────────────────────────────────────────────────────────
+启动：
   ros2 launch ros2_learning_lifecycle lifecycle_manual.launch.py
 
-  可选参数（覆盖 YAML 默认值）：
+可选参数（覆盖 YAML 默认值）：
   ros2 launch ros2_learning_lifecycle lifecycle_manual.launch.py \\
     sensor_id:=imu_rear \\
     publish_rate_hz:=5 \\
     configure_behavior:=error     # 测试错误路径
 
-── 手动控制（另开终端）──────────────────────────────────────────────
+手动控制（另开终端）：
   # 查看节点可用生命周期转换
   ros2 lifecycle list /sensor_node
   ros2 lifecycle list /processor_node
@@ -41,7 +42,7 @@ lifecycle_manual.launch.py — 手动 CLI 控制模式
   ros2 lifecycle set /sensor_node shutdown
   ros2 lifecycle set /processor_node shutdown
 
-── 错误路径测试 ──────────────────────────────────────────────────────
+错误路径测试：
   # 启动时注入 error
   ros2 launch ros2_learning_lifecycle lifecycle_manual.launch.py configure_behavior:=error
   # 然后：
@@ -60,6 +61,10 @@ _PKG = "ros2_learning_lifecycle"
 
 
 def generate_launch_description():
+    """!
+    @brief 生成手动控制模式 LaunchDescription。
+    @return launch.LaunchDescription 启动描述对象。
+    """
     pkg_share = get_package_share_directory(_PKG)
     default_yaml = os.path.join(pkg_share, "config", "lifecycle_demo.yaml")
 

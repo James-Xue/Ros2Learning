@@ -1,3 +1,11 @@
+#[[
+@file CMakeLists.txt
+@brief ros2_learning_lifecycle 包构建脚本。
+@details
+定义三个组件节点（sensor/processor/lifecycle_manager）的库、可执行注册、
+安装规则和单元测试目标。
+]]
+
 cmake_minimum_required(VERSION 3.8)
 project(ros2_learning_lifecycle)
 
