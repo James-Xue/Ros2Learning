@@ -97,19 +97,16 @@ public:
 private:
     /**
      * @brief 声明处理节点使用的全部参数。
-     * @return 无返回值。
      */
     void declare_parameters();
 
     /**
      * @brief 声明 configure_behavior 参数。
-     * @return 无返回值。
      */
     void declare_configure_behavior_parameter();
 
     /**
      * @brief 声明 window_size 参数及约束范围。
-     * @return 无返回值。
      */
     void declare_window_size_parameter();
 
@@ -128,7 +125,6 @@ private:
 
     /**
      * @brief 创建订阅器、发布器并初始化内部窗口。
-     * @return 无返回值。
      */
     void create_processing_interfaces();
 
@@ -148,7 +144,6 @@ private:
      * @brief 向窗口加入新样本并按窗口大小截断。
      * @param[in] value 新的传感器样本值。
      * @param[in] window_size 目标窗口大小。
-     * @return 无返回值。
      */
     void update_window(double value, int window_size);
 
@@ -161,7 +156,6 @@ private:
     /**
      * @brief 发布处理后的均值消息。
      * @param[in] average 当前窗口平均值。
-     * @return 无返回值。
      */
     void publish_processed_value(double average);
 
@@ -169,20 +163,17 @@ private:
      * @brief 输出处理流程调试日志。
      * @param[in] raw_value 原始传感器值。
      * @param[in] average 当前窗口平均值。
-     * @return 无返回值。
      */
     void log_processing_debug(double raw_value, double average) const;
 
     /**
      * @brief 订阅 /sensor_data 的回调，计算并发布窗口均值。
      * @param[in] msg 输入传感器消息。
-     * @return 无返回值。
      */
     void on_sensor_data(const std_msgs::msg::Float64 & msg);
 
     /**
      * @brief 清理订阅、发布器和内部缓存窗口。
-     * @return 无返回值。
      */
     void cleanup_resources();
 

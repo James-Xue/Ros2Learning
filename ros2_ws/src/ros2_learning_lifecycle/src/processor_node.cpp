@@ -27,7 +27,6 @@ ProcessorNode::ProcessorNode(const rclcpp::NodeOptions & options)
 
 /**
  * @brief 声明处理节点使用的全部参数。
- * @return 无返回值。
  */
 void ProcessorNode::declare_parameters()
 {
@@ -37,7 +36,6 @@ void ProcessorNode::declare_parameters()
 
 /**
  * @brief 声明 configure_behavior 参数。
- * @return 无返回值。
  */
 void ProcessorNode::declare_configure_behavior_parameter()
 {
@@ -52,7 +50,6 @@ void ProcessorNode::declare_configure_behavior_parameter()
 
 /**
  * @brief 声明 window_size 参数及约束范围。
- * @return 无返回值。
  */
 void ProcessorNode::declare_window_size_parameter()
 {
@@ -125,7 +122,6 @@ ProcessorNode::evaluate_configure_behavior(const std::string & behavior) const
 
 /**
  * @brief 创建订阅器、发布器并初始化内部窗口。
- * @return 无返回值。
  */
 void ProcessorNode::create_processing_interfaces()
 {
@@ -232,7 +228,6 @@ int ProcessorNode::get_window_size() const
  * @brief 向窗口加入新样本并按窗口大小截断。
  * @param[in] value 新的传感器样本值。
  * @param[in] window_size 目标窗口大小。
- * @return 无返回值。
  */
 void ProcessorNode::update_window(double value, int window_size)
 {
@@ -255,7 +250,6 @@ double ProcessorNode::compute_window_average() const
 /**
  * @brief 发布处理后的均值消息。
  * @param[in] average 当前窗口平均值。
- * @return 无返回值。
  */
 void ProcessorNode::publish_processed_value(double average)
 {
@@ -268,7 +262,6 @@ void ProcessorNode::publish_processed_value(double average)
  * @brief 输出处理流程调试日志。
  * @param[in] raw_value 原始传感器值。
  * @param[in] average 当前窗口平均值。
- * @return 无返回值。
  */
 void ProcessorNode::log_processing_debug(double raw_value, double average) const
 {
@@ -283,7 +276,6 @@ void ProcessorNode::log_processing_debug(double raw_value, double average) const
 /**
  * @brief 订阅回调，计算窗口均值并在 Active 状态下发布。
  * @param[in] msg 传感器输入数据。
- * @return 无返回值。
  */
 void ProcessorNode::on_sensor_data(const std_msgs::msg::Float64 & msg)
 {
@@ -301,7 +293,6 @@ void ProcessorNode::on_sensor_data(const std_msgs::msg::Float64 & msg)
 
 /**
  * @brief 清理订阅、发布器与窗口缓存。
- * @return 无返回值。
  */
 void ProcessorNode::cleanup_resources()
 {

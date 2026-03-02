@@ -30,7 +30,6 @@ SensorNode::SensorNode(const rclcpp::NodeOptions & options)
 
 /**
  * @brief 声明传感器节点使用的全部参数。
- * @return 无返回值。
  */
 void SensorNode::declare_parameters()
 {
@@ -40,7 +39,6 @@ void SensorNode::declare_parameters()
 
 /**
  * @brief 声明 sensor_id 参数。
- * @return 无返回值。
  */
 void SensorNode::declare_sensor_id_parameter()
 {
@@ -51,7 +49,6 @@ void SensorNode::declare_sensor_id_parameter()
 
 /**
  * @brief 声明 publish_rate_hz 参数及约束范围。
- * @return 无返回值。
  */
 void SensorNode::declare_publish_rate_parameter()
 {
@@ -86,7 +83,6 @@ SensorNode::on_configure(const rclcpp_lifecycle::State & /*state*/)
 
 /**
  * @brief 创建 /sensor_data 生命周期发布器。
- * @return 无返回值。
  */
 void SensorNode::create_sensor_publisher()
 {
@@ -115,7 +111,6 @@ SensorNode::on_activate(const rclcpp_lifecycle::State & state)
 /**
  * @brief 创建定时发布用 wall timer。
  * @param[in] rate_hz 发布频率（Hz）。
- * @return 无返回值。
  */
 void SensorNode::create_publish_timer(int rate_hz)
 {
@@ -202,7 +197,6 @@ std_msgs::msg::Float64 SensorNode::build_sensor_message()
 /**
  * @brief 输出发布调试日志。
  * @param[in] value 本次发布的数据值。
- * @return 无返回值。
  */
 void SensorNode::log_publish_debug(double value) const
 {
@@ -215,7 +209,6 @@ void SensorNode::log_publish_debug(double value) const
 
 /**
  * @brief 定时器回调，发布正弦波模拟传感器数据。
- * @return 无返回值。
  */
 void SensorNode::on_timer()
 {
