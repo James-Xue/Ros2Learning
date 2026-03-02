@@ -21,62 +21,16 @@ namespace ros2_learning_lifecycle
 
 /**
  * @brief 构造管理器节点并创建服务客户端、执行器线程与启动线程。
- * @param options ROS 2 节点选项。
+ * @param[in] options ROS 2 节点选项。
  */
 LifecycleManagerNode::LifecycleManagerNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("lifecycle_manager_node", options)
 {
-    this->declare_parameter<std::vector<std::string>>(
-        "managed_nodes", {"sensor_node", "processor_node"});
-    this->declare_parameter("transition_delay_sec", 1.0);
-
-    const auto node_names =
-        this->get_parameter("managed_nodes").as_string_array();
-
-    // ── 关键设计 ──────────────────────────────────────────────────────
-    // 创建专用 CallbackGroup，服务 Client 的响应回调均注册到此 group。
-    // 再把此 group（而非整个节点）加入 service_executor_，在独立线程中 spin。
-    //
-    // 这样做的原因：
-    //   rclcpp::spin_until_future_complete(node) 会把节点加入新 executor，
-    //   但节点已经被 ros2 launch 的主 executor 持有，重复 add_node 会抛出：
-    //   "Node has already been added to an executor"（std::runtime_error）
-    //
-    // 正确做法：让服务回调在独立 CallbackGroup + Executor 线程中处理，
-    // startup_sequence 线程只需 future.wait_for() 等待即可，无需自己 spin。
-    // ─────────────────────────────────────────────────────────────────
-    service_cb_group_ = this->create_callback_group(
-        rclcpp::CallbackGroupType::MutuallyExclusive);
-
-    for (const auto & name : node_names) {
-        ManagedNode mn;
-        mn.name = name;
-        mn.change_state_client = this->create_client<ChangeState>(
-            "/" + name + "/change_state",
-            rclcpp::ServicesQoS(),
-            service_cb_group_);
-        mn.get_state_client = this->create_client<GetState>(
-            "/" + name + "/get_state",
-            rclcpp::ServicesQoS(),
-            service_cb_group_);
-        managed_nodes_.push_back(std::move(mn));
-    }
-
-    // 把服务 CallbackGroup 加入专用 executor（不是整个节点）
-    service_executor_.add_callback_group(
-        service_cb_group_, this->get_node_base_interface());
-
-    // 启动服务 executor 线程（持续 spin，处理服务响应）
-    service_executor_thread_ = std::thread([this]() {
-        service_executor_.spin();
-    });
-
-    // 启动序列在独立线程执行，startup_sequence 内用 future.wait_for() 等待响应
-    startup_thread_ = std::thread([this]() {
-        // 给被管理节点一些时间初始化
-        std::this_thread::sleep_for(1s);
-        startup_sequence();
-    });
+    std::vector<std::string> node_names;
+    load_managed_node_names(node_names);
+    setup_service_executor();
+    initialize_managed_nodes(node_names);
+    start_background_threads();
 
     RCLCPP_INFO(get_logger(),
         "[LifecycleManager] 将管理 %zu 个节点，启动序列将在 1 秒后开始",
@@ -104,75 +58,203 @@ LifecycleManagerNode::~LifecycleManagerNode()
  */
 void LifecycleManagerNode::startup_sequence()
 {
-    // 1. 等待所有节点服务就绪
-    for (const auto & mn : managed_nodes_) {
-        RCLCPP_INFO(get_logger(),
-            "[LifecycleManager] 等待节点 '%s' 的服务...", mn.name.c_str());
-        if (!wait_for_service_ready(mn, 5s)) {
-            RCLCPP_ERROR(get_logger(),
-                "[LifecycleManager] 节点 '%s' 服务超时，放弃启动序列", mn.name.c_str());
-            return;
-        }
+    if (!wait_for_all_services(5s)) {
+        return;
     }
-
-    // 2. Configure all
-    RCLCPP_INFO(get_logger(), "[LifecycleManager] ── CONFIGURE ALL ──");
-    for (const auto & mn : managed_nodes_) {
-        const uint8_t current = get_state(mn);
-        RCLCPP_INFO(get_logger(),
-            "[LifecycleManager] '%s' 当前状态 id=%u，发送 configure...",
-            mn.name.c_str(), current);
-
-        if (current != State::PRIMARY_STATE_UNCONFIGURED) {
-            RCLCPP_WARN(get_logger(),
-                "[LifecycleManager] '%s' 不在 Unconfigured 状态，跳过 configure",
-                mn.name.c_str());
-            continue;
-        }
-        if (!change_state(mn, Transition::TRANSITION_CONFIGURE)) {
-            RCLCPP_ERROR(get_logger(),
-                "[LifecycleManager] '%s' configure 失败，放弃后续步骤", mn.name.c_str());
-            return;
-        }
-        RCLCPP_INFO(get_logger(), "[LifecycleManager] '%s' configure ✓", mn.name.c_str());
+    if (!configure_all_nodes()) {
+        return;
     }
-
-    // 3. 等待 transition_delay_sec 后 activate
-    const double delay = this->get_parameter("transition_delay_sec").as_double();
-    RCLCPP_INFO(get_logger(),
-        "[LifecycleManager] 等待 %.1f 秒后 activate...", delay);
-    std::this_thread::sleep_for(
-        std::chrono::milliseconds(static_cast<int64_t>(delay * 1000)));
-
-    // 4. Activate all
-    RCLCPP_INFO(get_logger(), "[LifecycleManager] ── ACTIVATE ALL ──");
-    for (const auto & mn : managed_nodes_) {
-        const uint8_t current = get_state(mn);
-        RCLCPP_INFO(get_logger(),
-            "[LifecycleManager] '%s' 当前状态 id=%u，发送 activate...",
-            mn.name.c_str(), current);
-
-        if (current != State::PRIMARY_STATE_INACTIVE) {
-            RCLCPP_WARN(get_logger(),
-                "[LifecycleManager] '%s' 不在 Inactive 状态，跳过 activate",
-                mn.name.c_str());
-            continue;
-        }
-        if (!change_state(mn, Transition::TRANSITION_ACTIVATE)) {
-            RCLCPP_ERROR(get_logger(),
-                "[LifecycleManager] '%s' activate 失败", mn.name.c_str());
-            return;
-        }
-        RCLCPP_INFO(get_logger(), "[LifecycleManager] '%s' activate ✓", mn.name.c_str());
+    wait_transition_delay();
+    if (!activate_all_nodes()) {
+        return;
     }
 
     RCLCPP_INFO(get_logger(), "[LifecycleManager] ── 所有节点已 Active ── 管理器进入待机状态");
 }
 
 /**
+ * @brief 声明参数并读取受管节点列表。
+ * @param[out] node_names 读取到的受管节点名称列表。
+ */
+void LifecycleManagerNode::load_managed_node_names(std::vector<std::string> & node_names)
+{
+    this->declare_parameter<std::vector<std::string>>(
+        "managed_nodes", {"sensor_node", "processor_node"});
+    this->declare_parameter("transition_delay_sec", 1.0);
+    node_names = this->get_parameter("managed_nodes").as_string_array();
+}
+
+/**
+ * @brief 为每个受管节点创建 lifecycle 服务客户端。
+ * @param[in] node_names 受管节点名称列表。
+ */
+void LifecycleManagerNode::initialize_managed_nodes(const std::vector<std::string> & node_names)
+{
+    for (const auto & name : node_names) {
+        ManagedNode node;
+        node.name = name;
+        node.change_state_client = this->create_client<ChangeState>(
+            "/" + name + "/change_state",
+            rclcpp::ServicesQoS(),
+            service_cb_group_);
+        node.get_state_client = this->create_client<GetState>(
+            "/" + name + "/get_state",
+            rclcpp::ServicesQoS(),
+            service_cb_group_);
+        managed_nodes_.push_back(std::move(node));
+    }
+}
+
+/**
+ * @brief 配置服务回调组并绑定到专用执行器。
+ */
+void LifecycleManagerNode::setup_service_executor()
+{
+    service_cb_group_ = this->create_callback_group(
+        rclcpp::CallbackGroupType::MutuallyExclusive);
+    service_executor_.add_callback_group(
+        service_cb_group_, this->get_node_base_interface());
+}
+
+/**
+ * @brief 启动服务执行器线程与启动序列线程。
+ */
+void LifecycleManagerNode::start_background_threads()
+{
+    service_executor_thread_ = std::thread([this]() {
+        service_executor_.spin();
+    });
+
+    startup_thread_ = std::thread([this]() {
+        std::this_thread::sleep_for(1s);
+        startup_sequence();
+    });
+}
+
+/**
+ * @brief 等待所有被管理节点生命周期服务就绪。
+ * @param[in] timeout 每个节点服务等待超时时间。
+ * @return 全部节点服务就绪返回 true，否则返回 false。
+ */
+bool LifecycleManagerNode::wait_for_all_services(std::chrono::seconds timeout)
+{
+    for (const auto & node : managed_nodes_) {
+        RCLCPP_INFO(get_logger(),
+            "[LifecycleManager] 等待节点 '%s' 的服务...", node.name.c_str());
+        if (!wait_for_service_ready(node, timeout)) {
+            RCLCPP_ERROR(get_logger(),
+                "[LifecycleManager] 节点 '%s' 服务超时，放弃启动序列", node.name.c_str());
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief 顺序配置所有处于 Unconfigured 的节点。
+ * @return 全部需要配置的节点均成功返回 true，否则返回 false。
+ */
+bool LifecycleManagerNode::configure_all_nodes()
+{
+    RCLCPP_INFO(get_logger(), "[LifecycleManager] ── CONFIGURE ALL ──");
+    for (const auto & node : managed_nodes_) {
+        if (!configure_node_if_needed(node)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief 按参数延迟启动下一阶段状态迁移。
+ */
+void LifecycleManagerNode::wait_transition_delay()
+{
+    const double delay_sec = this->get_parameter("transition_delay_sec").as_double();
+    RCLCPP_INFO(get_logger(),
+        "[LifecycleManager] 等待 %.1f 秒后 activate...", delay_sec);
+
+    std::this_thread::sleep_for(
+        std::chrono::milliseconds(static_cast<int64_t>(delay_sec * 1000.0)));
+}
+
+/**
+ * @brief 顺序激活所有处于 Inactive 的节点。
+ * @return 全部需要激活的节点均成功返回 true，否则返回 false。
+ */
+bool LifecycleManagerNode::activate_all_nodes()
+{
+    RCLCPP_INFO(get_logger(), "[LifecycleManager] ── ACTIVATE ALL ──");
+    for (const auto & node : managed_nodes_) {
+        if (!activate_node_if_needed(node)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief 执行单节点的 configure 迁移（仅在状态匹配时执行）。
+ * @param[in] node 被管理节点描述。
+ * @return 迁移成功或无需迁移返回 true，迁移失败返回 false。
+ */
+bool LifecycleManagerNode::configure_node_if_needed(const ManagedNode & node)
+{
+    const uint8_t current_state = get_state(node);
+    RCLCPP_INFO(get_logger(),
+        "[LifecycleManager] '%s' 当前状态 id=%u，发送 configure...",
+        node.name.c_str(), current_state);
+
+    if (current_state != State::PRIMARY_STATE_UNCONFIGURED) {
+        RCLCPP_WARN(get_logger(),
+            "[LifecycleManager] '%s' 不在 Unconfigured 状态，跳过 configure",
+            node.name.c_str());
+        return true;
+    }
+
+    if (!change_state(node, Transition::TRANSITION_CONFIGURE)) {
+        RCLCPP_ERROR(get_logger(),
+            "[LifecycleManager] '%s' configure 失败，放弃后续步骤", node.name.c_str());
+        return false;
+    }
+
+    RCLCPP_INFO(get_logger(), "[LifecycleManager] '%s' configure ✓", node.name.c_str());
+    return true;
+}
+
+/**
+ * @brief 执行单节点的 activate 迁移（仅在状态匹配时执行）。
+ * @param[in] node 被管理节点描述。
+ * @return 迁移成功或无需迁移返回 true，迁移失败返回 false。
+ */
+bool LifecycleManagerNode::activate_node_if_needed(const ManagedNode & node)
+{
+    const uint8_t current_state = get_state(node);
+    RCLCPP_INFO(get_logger(),
+        "[LifecycleManager] '%s' 当前状态 id=%u，发送 activate...",
+        node.name.c_str(), current_state);
+
+    if (current_state != State::PRIMARY_STATE_INACTIVE) {
+        RCLCPP_WARN(get_logger(),
+            "[LifecycleManager] '%s' 不在 Inactive 状态，跳过 activate",
+            node.name.c_str());
+        return true;
+    }
+
+    if (!change_state(node, Transition::TRANSITION_ACTIVATE)) {
+        RCLCPP_ERROR(get_logger(),
+            "[LifecycleManager] '%s' activate 失败", node.name.c_str());
+        return false;
+    }
+
+    RCLCPP_INFO(get_logger(), "[LifecycleManager] '%s' activate ✓", node.name.c_str());
+    return true;
+}
+
+/**
  * @brief 等待单个被管理节点的 get_state/change_state 服务可用。
- * @param node 被管理节点。
- * @param timeout 服务等待超时时间。
+ * @param[in] node 被管理节点。
+ * @param[in] timeout 服务等待超时时间。
  * @return 服务均可用返回 true，否则返回 false。
  */
 bool LifecycleManagerNode::wait_for_service_ready(
@@ -193,8 +275,8 @@ bool LifecycleManagerNode::wait_for_service_ready(
 
 /**
  * @brief 发送 change_state 服务请求。
- * @param node 被管理节点。
- * @param transition_id 生命周期转换 ID。
+ * @param[in] node 被管理节点。
+ * @param[in] transition_id 生命周期转换 ID。
  * @return 转换成功返回 true，否则返回 false。
  */
 bool LifecycleManagerNode::change_state(
@@ -217,7 +299,7 @@ bool LifecycleManagerNode::change_state(
 
 /**
  * @brief 查询被管理节点当前生命周期主状态 ID。
- * @param node 被管理节点。
+ * @param[in] node 被管理节点。
  * @return 当前状态 ID；超时则返回 PRIMARY_STATE_UNKNOWN。
  */
 uint8_t LifecycleManagerNode::get_state(const ManagedNode & node)

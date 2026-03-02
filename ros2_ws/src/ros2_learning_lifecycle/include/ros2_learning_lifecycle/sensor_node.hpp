@@ -8,6 +8,7 @@
 #include <rclcpp/rclcpp.hpp>
 #include <rclcpp_lifecycle/lifecycle_node.hpp>
 #include <rclcpp_lifecycle/lifecycle_publisher.hpp>
+#include <string>
 #include <std_msgs/msg/float64.hpp>
 
 namespace ros2_learning_lifecycle
@@ -44,37 +45,37 @@ public:
 
     /**
      * @brief 构造 SensorNode 并声明参数。
-     * @param options ROS 2 节点选项。
+     * @param[in] options ROS 2 节点选项。
      */
     explicit SensorNode(const rclcpp::NodeOptions & options = rclcpp::NodeOptions{});
 
     /**
      * @brief 执行 Unconfigured -> Inactive，创建发布器。
-     * @param state 当前生命周期状态（由框架传入）。
+     * @param[in] state 当前生命周期状态（由框架传入）。
      * @return 生命周期回调结果。
      */
     CallbackReturn on_configure(const rclcpp_lifecycle::State & state) override;
     /**
      * @brief 执行 Inactive -> Active，激活发布器并创建定时器。
-     * @param state 当前生命周期状态（由框架传入）。
+     * @param[in] state 当前生命周期状态（由框架传入）。
      * @return 生命周期回调结果。
      */
     CallbackReturn on_activate(const rclcpp_lifecycle::State & state) override;
     /**
      * @brief 执行 Active -> Inactive，销毁定时器并停用发布器。
-     * @param state 当前生命周期状态（由框架传入）。
+     * @param[in] state 当前生命周期状态（由框架传入）。
      * @return 生命周期回调结果。
      */
     CallbackReturn on_deactivate(const rclcpp_lifecycle::State & state) override;
     /**
      * @brief 执行 Inactive -> Unconfigured，释放发布器资源。
-     * @param state 当前生命周期状态（由框架传入）。
+     * @param[in] state 当前生命周期状态（由框架传入）。
      * @return 生命周期回调结果。
      */
     CallbackReturn on_cleanup(const rclcpp_lifecycle::State & state) override;
     /**
      * @brief 执行 Any -> Finalized，释放所有资源。
-     * @param state 当前生命周期状态（由框架传入）。
+     * @param[in] state 当前生命周期状态（由框架传入）。
      * @return 生命周期回调结果。
      */
     CallbackReturn on_shutdown(const rclcpp_lifecycle::State & state) override;
@@ -87,16 +88,70 @@ public:
 
 private:
     /**
+     * @brief 声明传感器节点使用的全部参数。
+     * @return 无返回值。
+     */
+    void declare_parameters();
+
+    /**
+     * @brief 声明 sensor_id 参数。
+     * @return 无返回值。
+     */
+    void declare_sensor_id_parameter();
+
+    /**
+     * @brief 声明 publish_rate_hz 参数及约束范围。
+     * @return 无返回值。
+     */
+    void declare_publish_rate_parameter();
+
+    /**
+     * @brief 创建 /sensor_data 生命周期发布器。
+     * @return 无返回值。
+     */
+    void create_sensor_publisher();
+
+    /**
+     * @brief 创建定时发布用 wall timer。
+     * @param[in] rate_hz 发布频率（Hz）。
+     * @return 无返回值。
+     */
+    void create_publish_timer(int rate_hz);
+
+    /**
+     * @brief 读取 publish_rate_hz 参数值。
+     * @return 当前发布频率（Hz）。
+     */
+    int get_publish_rate_hz() const;
+
+    /**
+     * @brief 读取 sensor_id 参数值。
+     * @return 当前传感器编号字符串。
+     */
+    std::string get_sensor_id() const;
+
+    /**
+     * @brief 构造模拟传感器输出消息并推进内部相位。
+     * @return 待发布的 Float64 消息。
+     */
+    std_msgs::msg::Float64 build_sensor_message();
+
+    /**
+     * @brief 输出发布调试日志。
+     * @param[in] value 本次发布的数据值。
+     * @return 无返回值。
+     */
+    void log_publish_debug(double value) const;
+
+    /**
      * @brief 定时器回调，发布模拟传感器数据。
+     * @return 无返回值。
      */
     void on_timer();
 
-    /// 生命周期发布器（topic: /sensor_data）。
-    LifecyclePublisherFloat64::SharedPtr publisher_;
-    /// 仅在 Active 状态存在的 wall timer。
-    rclcpp::TimerBase::SharedPtr timer_;
-    /// 正弦波模拟数据相位累计值。
-    double simulated_value_{0.0};
+    LifecyclePublisherFloat64::SharedPtr publisher_;  ///< 生命周期发布器（topic: /sensor_data）。
+    rclcpp::TimerBase::SharedPtr timer_;  ///< 仅在 Active 状态存在的 wall timer。
+    double simulated_value_{0.0};  ///< 正弦波模拟数据相位累计值。
 };
 
 }  // namespace ros2_learning_lifecycle
