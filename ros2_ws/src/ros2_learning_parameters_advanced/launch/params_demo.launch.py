@@ -12,53 +12,60 @@
 
 参数优先级（低 → 高）：
   代码默认值 < YAML 文件 < 命令行 node_label 参数（仅当显式传入时）
+  注意：CLI 覆盖仅对 node_label 有效；其余参数（scale_factor 等）只能通过 YAML 配置。
+
+实现说明：
+  launch_ros 的 Node.parameters 列表在声明时就已固定，无法在运行时按条件删除某项。
+  若用 {"node_label": LaunchConfiguration(...)} 且默认值为哨兵字符串，哨兵本身会被写进节点。
+  解决办法：用 OpaqueFunction 在上下文求值阶段动态决定是否追加覆盖字典。
 """
 
 import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument
-from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, NotEqualsSubstitution
+from launch.actions import DeclareLaunchArgument, OpaqueFunction
+from launch.substitutions import LaunchConfiguration
 from launch_ros.actions import Node
 
 
-# 用于标记"用户未传入此参数"的哨兵值
-_UNSET = "__unset__"
+# 哨兵值：空字符串，表示"用户未传入 node_label"。
+# 选用空字符串而非任意占位符，是因为节点业务层本身拒绝空 label，
+# 不存在用户真实传入空字符串的合法场景，故不会产生误判。
+_UNSET = ""
 
 
-def generate_launch_description():
+def _make_param_demo_node(context, *args, **kwargs):
+    """OpaqueFunction 回调：在 launch 上下文求值阶段动态构造 param_demo_node。
+
+    只有用户显式传入 node_label 时才将其追加到 parameters 列表，
+    否则仅加载 YAML 文件，让 YAML 中的值生效。
+    """
     pkg_share = get_package_share_directory("ros2_learning_parameters_advanced")
     default_yaml = os.path.join(pkg_share, "config", "params.yaml")
 
-    # 默认值为哨兵：只有用户显式传入时才覆盖 YAML 中的值
-    node_label_arg = DeclareLaunchArgument(
-        "node_label",
-        default_value=_UNSET,
-        description="覆盖 param_demo_node 的 node_label（不传则使用 YAML 默认值）",
-    )
+    # 在上下文中对 LaunchConfiguration 求值，得到实际字符串
+    node_label = LaunchConfiguration("node_label").perform(context)
 
-    node_label_cfg = LaunchConfiguration("node_label")
+    params = [default_yaml]  # 始终加载 YAML 基础配置
+    if node_label != _UNSET:
+        # 用户显式传入了 node_label：追加覆盖字典，其优先级高于 YAML
+        params.append({"node_label": node_label})
 
-    # 当 node_label 未被显式传入时，仅加载 YAML；传入时再追加覆盖字典
-    # launch_ros Node.parameters 列表按顺序合并，后者覆盖前者
-    param_demo_node = Node(
+    return [Node(
         package="ros2_learning_parameters_advanced",
         executable="param_demo",
         name="param_demo_node",
         output="screen",
-        parameters=[
-            # 1. YAML 文件（始终加载）
-            default_yaml,
-            # 2. 命令行覆盖字典（仅当用户传了非哨兵值时生效）
-            #    NotEqualsSubstitution 在 Jazzy 中需要 launch >= 3.x；
-            #    若版本不支持，可改用 OpaqueFunction 实现同等逻辑
-            {"node_label": node_label_cfg},
-        ],
-        # 用条件来控制 node_label 覆盖不在此处——parameters 列表无法按条件删除项；
-        # 实际上 launch_ros 在参数值为字符串时会直接传给 ros2，哨兵值会被设进去。
-        # 正确做法：在 OpaqueFunction 中动态构造 parameters 列表（见下方替代方案注释）
+        parameters=params,
+    )]
+
+
+def generate_launch_description():
+    node_label_arg = DeclareLaunchArgument(
+        "node_label",
+        default_value=_UNSET,
+        description="覆盖 param_demo_node 的 node_label（不传则使用 YAML 默认值）",
     )
 
     param_event_listener_node = Node(
@@ -70,29 +77,6 @@ def generate_launch_description():
 
     return LaunchDescription([
         node_label_arg,
-        param_demo_node,
+        OpaqueFunction(function=_make_param_demo_node),
         param_event_listener_node,
     ])
-
-
-# ---------------------------------------------------------------------------
-# 替代方案（更健壮）：使用 OpaqueFunction 动态构造 parameters
-# ---------------------------------------------------------------------------
-# from launch.actions import OpaqueFunction
-#
-# def _make_param_demo_node(context, *args, **kwargs):
-#     pkg_share = get_package_share_directory("ros2_learning_parameters_advanced")
-#     default_yaml = os.path.join(pkg_share, "config", "params.yaml")
-#     params = [default_yaml]
-#
-#     node_label = LaunchConfiguration("node_label").perform(context)
-#     if node_label != _UNSET:
-#         params.append({"node_label": node_label})
-#
-#     return [Node(
-#         package="ros2_learning_parameters_advanced",
-#         executable="param_demo",
-#         name="param_demo_node",
-#         output="screen",
-#         parameters=params,
-#     )]
