@@ -2,7 +2,16 @@
 
 /**
  * @file count_action_server.hpp
- * @brief CountActionServer 节点声明——演示 rclcpp_action Server 完整实现。
+ * @brief CountActionServer 声明：定义 Action Server 的回调接口与线程协作边界。
+ *
+ * 详细说明：该头文件描述 ROS 2 Action Server 在 Goal/Feedback/Result 三段式协议中的
+ * 角色。Goal 阶段由 `handle_goal` 审核并决定接受或拒绝；执行阶段由 `execute` 迭代发布
+ * Feedback；结束阶段通过 `succeed_with_result`/`cancel_with_result` 回传 Result。
+ * 线程模型上，`handle_accepted` 仅负责调度，将耗时任务放入 `std::thread`；通过
+ * `std::mutex` 串行保护 `execute_thread_`，避免并发回调下线程对象竞争。
+ * 在 rclcpp_action 框架中，`handle_goal` 在收到 goal request 时触发，`handle_cancel`
+ * 在收到 cancel request 时触发，`handle_accepted` 在 goal 状态进入 accepted 后触发，
+ * `execute` 为业务执行体，不直接由 executor 长时占用回调线程。
  */
 
 #include <chrono>
@@ -19,21 +28,19 @@ namespace ros2_learning_actions
 
 /**
  * @class CountActionServer
- * @brief 基于 CountTask.action 的计数动作服务端。
+ * @brief 基于 `rclcpp::Node` 的计数 Action 服务端，负责受理目标并执行计数任务。
  *
- * 功能设计：
- *   - handle_goal    : 校验 target > 0 且 period_sec > 0，否则 REJECT
- *   - handle_cancel  : 无条件接受取消请求
- *   - handle_accepted: 在独立 std::thread 中启动计数循环
- *   - execute        : 循环递增计数，每次等待 period_sec 秒，发布 Feedback，
- *                      检查 is_canceling()；完成后调用 succeed() 或 canceled()
+ * 设计说明：
+ * - 继承 `rclcpp::Node`，因为 Action Server 需要依托 ROS 2 节点完成实体创建、日志输出、
+ *   参数/时钟/执行器上下文接入；该继承也是 rclcpp_components 组件化加载的标准入口。
+ * - 执行流程是一个简化状态机：`handle_goal`(校验) -> `handle_accepted`(调度线程) ->
+ *   `execute`(循环发布 Feedback) -> `succeed_with_result/cancel_with_result`(终态回传)。
+ * - 线程安全上，`thread_mutex_` 仅保护 `execute_thread_` 的创建/join 生命周期；
+ *   目标取消状态由 `goal_handle->is_canceling()` 从框架状态机读取，不由本类自行加锁。
  *
- * 线程安全说明：
- *   execute_thread_ 在 handle_accepted 中启动，持有 goal_handle 的 shared_ptr，
- *   与 ROS 回调线程完全解耦。通过 goal_handle->is_canceling() 安全检查取消状态。
- *   不支持并发 goal——handle_accepted 会先 join 前一个执行线程。
- *
- * 注册为 rclcpp_components 插件，可独立运行或放入 ComposableNodeContainer。
+ * 生命周期说明：
+ * - 该类通常由组件容器创建并托管，析构时会尝试 join 执行线程，确保退出期无后台悬挂任务。
+ * - 当前实现为单 Goal 串行模型（新 Goal 到来前会等待旧线程收敛），用于教学可观测性优先。
  */
 class CountActionServer : public rclcpp::Node
 {
@@ -46,12 +53,14 @@ public:
     /**
      * @brief 构造 CountActionServer 并创建 action server。
      * @param[in] options ROS 2 节点选项。
+     * @return 无（构造函数）。
      */
     explicit CountActionServer(
         const rclcpp::NodeOptions & options = rclcpp::NodeOptions{});
 
     /**
      * @brief 析构，确保执行线程安全退出。
+     * @return 无（析构函数）。
      */
     ~CountActionServer() override;
 
@@ -77,6 +86,7 @@ private:
     /**
      * @brief 处理已接受目标回调，启动执行线程。
      * @param[in] goal_handle 已接受的目标句柄。
+     * @return 无。
      */
     void handle_accepted(
         const std::shared_ptr<GoalHandleCountTask> goal_handle);
@@ -84,6 +94,7 @@ private:
     /**
      * @brief 在独立线程中执行计数循环，发布 Feedback，完成后报告 Result。
      * @param[in] goal_handle 目标句柄。
+     * @return 无。
      */
     void execute(const std::shared_ptr<GoalHandleCountTask> goal_handle);
 
@@ -92,6 +103,7 @@ private:
      * @param[in] goal_handle 目标句柄。
      * @param[in] current     当前计数值。
      * @param[in] target      目标计数值（用于计算 percent）。
+     * @return 无。
      */
     void publish_feedback(
         const std::shared_ptr<GoalHandleCountTask> & goal_handle,
@@ -103,6 +115,7 @@ private:
      * @param[in] goal_handle 目标句柄。
      * @param[in] final_count 最终计数值。
      * @param[in] elapsed_sec 任务总耗时（秒）。
+     * @return 无。
      */
     void succeed_with_result(
         const std::shared_ptr<GoalHandleCountTask> & goal_handle,
@@ -114,6 +127,7 @@ private:
      * @param[in] goal_handle 目标句柄。
      * @param[in] final_count 被取消时已达到的计数值。
      * @param[in] elapsed_sec 从开始到取消的耗时（秒）。
+     * @return 无。
      */
     void cancel_with_result(
         const std::shared_ptr<GoalHandleCountTask> & goal_handle,
@@ -128,9 +142,9 @@ private:
     static float compute_elapsed_sec(
         const std::chrono::steady_clock::time_point & start_time);
 
-    rclcpp_action::Server<CountTask>::SharedPtr action_server_;  ///< action server 实例。
-    std::thread execute_thread_;  ///< 执行计数循环的后台线程。
-    std::mutex thread_mutex_;  ///< 保护 execute_thread_ 的互斥锁。
+    rclcpp_action::Server<CountTask>::SharedPtr action_server_;  ///< Action Server 句柄，节点存活期间常驻，用于接入 rclcpp_action 状态机。
+    std::thread execute_thread_;  ///< 后台执行线程，仅在有已接受 Goal 时有效，析构前必须 join 回收。
+    std::mutex thread_mutex_;  ///< 线程互斥锁，生命周期同节点，用于保护 execute_thread_ 的 join/create 临界区。
 };
 
 }  // namespace ros2_learning_actions
