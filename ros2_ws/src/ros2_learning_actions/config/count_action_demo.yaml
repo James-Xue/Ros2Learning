@@ -1,0 +1,11 @@
+# @file count_action_demo.yaml
+# @brief count_action_demo 包默认参数配置。
+
+count_action_server:
+  ros__parameters: {}      # server 暂无可配置参数
+
+count_action_client:
+  ros__parameters:
+    target: 5              # 计数目标（必须 > 0）
+    period_sec: 0.3        # 每次计数等待时间（秒，必须 > 0）
+    cancel_after_sec: -1.0 # 负值 = 不取消；正值 = 在该秒数后发送取消

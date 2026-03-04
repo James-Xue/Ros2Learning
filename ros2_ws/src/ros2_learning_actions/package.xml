@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd"
+            schematypens="http://www.w3.org/2001/XMLSchema"?>
+<!--
+  @file package.xml
+  @brief ros2_learning_actions 包元数据与依赖声明。
+-->
+<package format="3">
+  <name>ros2_learning_actions</name>
+  <version>0.0.1</version>
+  <description>
+    ROS 2 Action 通信机制进阶演示：基于 CountTask.action 实现完整的
+    rclcpp_action Server（目标校验、周期计数、Feedback 发布、取消处理）
+    与 Client（参数化目标、三回调、超时取消），含 GTest 单元测试。
+  </description>
+  <maintainer email="user@example.com">Ros2Learning</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_action</depend>
+  <depend>rclcpp_components</depend>
+  <depend>ros2_learning_custom_interfaces</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
