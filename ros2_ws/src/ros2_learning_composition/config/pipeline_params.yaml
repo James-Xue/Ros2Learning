@@ -1,0 +1,5 @@
+/**:
+  ros__parameters:
+    image_width: 64
+    image_height: 64
+    publish_rate_hz: 10.0

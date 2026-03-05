@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<!--
+  @file package.xml
+  @brief ros2_learning_composition 包元数据与依赖声明。
+-->
+<package format="3">
+  <name>ros2_learning_composition</name>
+  <version>0.0.1</version>
+  <description>
+    ROS 2 Component 组合深度学习包：Intra-process 零拷贝通信、动态组件加载/卸载、
+    LifecycleNode 组件化、多容器架构对比。使用图像处理流水线场景串联所有概念。
+  </description>
+  <maintainer email="user@example.com">Ros2Learning</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>rclcpp_lifecycle</depend>
+  <depend>sensor_msgs</depend>
+  <depend>rcl_interfaces</depend>
+
+  <exec_depend>launch</exec_depend>
+  <exec_depend>launch_ros</exec_depend>
+  <exec_depend>ament_index_python</exec_depend>
+
+  <test_depend>std_msgs</test_depend>
+  <test_depend>lifecycle_msgs</test_depend>
+  <test_depend>ament_cmake_gtest</test_depend>
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>
